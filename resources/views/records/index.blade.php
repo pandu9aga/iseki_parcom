@@ -223,15 +223,15 @@
         }
 
         el.innerHTML = `
-            <div class="alert ${alertClass} d-flex align-items-start justify-content-between" role="alert">
+            <div class="alert ${alertClass} p-4 fs-5 d-flex align-items-start justify-content-between" role="alert" style="border-radius: 10px;">
                 <div>
-                    <span class="badge ${badgeClass} me-2">${state === "ok" ? "OK" : "NG"}</span>
+                    <span class="badge ${badgeClass} me-3 p-3 fs-6">${state === "ok" ? "OK" : "NG"}</span>
                     <strong>${title}</strong><br>
-                    <small>
+                    <small class="fs-6">
                         Prediksi: <code>${pred || "-"}</code> |
                         Kode Part: <code>${code || "-"}</code>
                     </small>
-                    <div class="mt-1">${body}</div>
+                    <div class="mt-2">${body}</div>
                 </div>
             </div>
         `;
