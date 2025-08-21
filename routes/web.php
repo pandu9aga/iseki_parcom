@@ -5,6 +5,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\Admins\DashboardController;
 use App\Http\Controllers\Admins\RecordController;
+use App\Http\Controllers\Admins\UserController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
 Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
@@ -25,4 +26,9 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/dashboard_admin/reset', [DashboardController::class, 'reset'])->name('dashboard.admin.reset');
     Route::get('/record_admin/{Id_Comparison}', [RecordController::class, 'record'])->name('record.admin');
     Route::post('/record_admin', [RecordController::class, 'insert'])->name('record.admin.insert');
+
+    Route::get('/user', [UserController::class, 'index'])->name('user');
+    Route::post('/user/create', [UserController::class, 'create'])->name('user.create');
+    Route::put('/user/update/{Id_User}', [UserController::class, 'update'])->name('user.update');
+    Route::delete('/user/delete/{Id_User}', [UserController::class, 'destroy'])->name('user.destroy');
 });
