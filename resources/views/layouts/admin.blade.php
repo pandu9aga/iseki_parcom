@@ -19,7 +19,7 @@
     <body id="page-top">
         <!-- Navigation-->
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" id="sideNav">
-            <a class="navbar-brand js-scroll-trigger" href="{{ route('dashboard') }}">
+            <a class="navbar-brand js-scroll-trigger" href="{{ route('dashboard.admin') }}">
                 <span class="d-block d-lg-none">Iseki Parcom</span>
                 <span class="d-none d-lg-block"><img class="img-fluid img-profile rounded-circle mx-auto mb-2" src="{{ asset('assets/img/profile.png') }}" alt="Iseki Parcom" /></span>
             </a>
@@ -27,9 +27,10 @@
             <div class="collapse navbar-collapse" id="navbarResponsive">
                 <ul class="navbar-nav">
                     <li class="nav-item"><span class="nav-link js-scroll-trigger active" href="#">Part Comparator</span></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record', ['Id_Comparison' => 1]) }}">Record</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'login' ? 'active' : '' }}" href="{{ route('login') }}">Login</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard.admin') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record.admin', ['Id_Comparison' => 1]) }}">Record</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard.admin') }}">User</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'logout' ? 'active' : '' }}" href="{{ route('logout') }}">Logout</a></li>
                 </ul>
             </div>
         </nav>

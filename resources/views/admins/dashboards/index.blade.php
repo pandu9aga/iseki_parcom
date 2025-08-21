@@ -1,4 +1,4 @@
-@extends('layouts.main')
+@extends('layouts.admin')
 @section('content')
 <div class="container-fluid p-0">
     <section class="resume-section">
@@ -9,7 +9,7 @@
             </h3>
             <div class="subheading mb-5">
                 Dashboard
-                <a href="{{ route('record', ['Id_Comparison' => 1]) }}"><button class="btn btn-primary text-white" type="button">Record Now</button></a>
+                <a href="{{ route('record.admin', ['Id_Comparison' => 1]) }}"><button class="btn btn-primary text-white" type="button">Record Now</button></a>
             </div>
             <p class="lead mb-3">List Record:</p>
             <div class="col-xl-4 col-md-6 mb-3">
@@ -20,7 +20,7 @@
                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                     Choose Day
                                 </div>
-                                <form class="user" action="{{ route('dashboard.submit') }}" method="GET">
+                                <form class="user" action="{{ route('dashboard.admin.submit') }}" method="GET">
                                     @csrf
                                     <div class="row d-flex align-items-center">
                                         <div class="col-lg-8 col-md-6 mb-1">
@@ -38,13 +38,13 @@
                     </div>
                 </div>
             </div>
-            <form class="user mb-3" action="{{ route('dashboard.export') }}" method="GET" target="_blank">
+            <form class="user mb-3" action="{{ route('dashboard.admin.export') }}" method="GET" target="_blank">
                 <input name="Day_Record_Hidden" type="hidden" class="form-control form-control-user" value="{{ $date }}">
                 <button class="d-sm-inline-block btn btn-md btn-primary text-white" type="submit">
                     <i class="fas fa-download fa-sm"></i> Download Report
                 </button>
             </form>
-            {{-- <button class="d-sm-inline-block btn btn-md btn-danger my-2" type="button" data-bs-toggle="modal" data-bs-target="#resetReportModal">
+            <button class="d-sm-inline-block btn btn-md btn-danger my-2" type="button" data-bs-toggle="modal" data-bs-target="#resetReportModal">
                 <i class="fas fa-trash fa-sm"></i> Reset Report
             </button>
             <div class="modal fade" id="resetReportModal" tabindex="-1" role="dialog" aria-labelledby="resetReportModalLabel" aria-hidden="true">
@@ -60,11 +60,11 @@
                         </div>
                         <div class="modal-footer">
                             <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-                            <a class="btn btn-danger" href="{{ route('dashboard.reset') }}">Reset</a>
+                            <a class="btn btn-danger" href="{{ route('dashboard.admin.reset') }}">Reset</a>
                         </div>
                     </div>
                 </div>
-            </div> --}}
+            </div>
             <div class="table-responsive p-0">
                 <table id="example" class="table align-items-center mb-0">
                     <thead>

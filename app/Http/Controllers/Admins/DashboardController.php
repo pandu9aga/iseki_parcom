@@ -1,6 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admins;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -14,7 +15,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
 
-class MainController extends Controller
+class DashboardController extends Controller
 {
     public function index()
     {
@@ -25,57 +26,7 @@ class MainController extends Controller
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
-        return view('dashboards.index', compact('page', 'records', 'date'));
-    }
-
-    public function signin(){
-        $page = 'dashboard';
-
-        if (session()->has('Id_User')) {
-            if (session('Id_Type_User') == 2){
-                return redirect()->route('dashboard.admin');
-            }
-            else if (session('Id_Type_User') == 1){
-                return redirect()->route('base');
-            }
-        }
-        return view('auth.login', compact('page'));
-    }
-
-    public function login(Request $request)
-    {
-        $request->validate([
-            'Username_User' => 'required',
-            'Password_User' => 'required'
-        ]);
-
-        $user = User::where('Username_User', $request->Username_User)->first();
-
-        if (!$user) {
-            return back()->withErrors(['loginError' => 'Invalid username or password']);
-        }
-
-        if ($request->Password_User == $user->Password_User) {
-            session(['Id_User' => $user->Id_User]);
-            session(['Id_Type_User' => $user->Id_Type_User]);
-            session(['Username_User' => $user->Username_User]);
-            if (session('Id_Type_User') == 2){
-                return redirect()->route('dashboard.admin');
-            }
-            else if (session('Id_Type_User') == 1){
-                return redirect()->route('base');
-            }
-        }
-
-        return back()->withErrors(['loginError' => 'Invalid username or password']);
-    }
-
-    public function logout()
-    {
-        session()->forget('Id_User');
-        session()->forget('Id_Type_User');
-        session()->forget('Username_User');
-        return redirect()->route('/');
+        return view('admins.dashboards.index', compact('page', 'records', 'date'));
     }
 
     public function submit(Request $request){
@@ -86,7 +37,7 @@ class MainController extends Controller
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
-        return view('dashboards.index', compact('page', 'records', 'date'));
+        return view('admins.dashboards.index', compact('page', 'records', 'date'));
     }
 
     public function export(Request $request) {
@@ -151,42 +102,7 @@ class MainController extends Controller
 
     public function reset(){
         Record::truncate();
-        return redirect()->route('dashboard');
-    }
-
-    public function record($Id_Comparison)
-    {
-        $page = 'record';
-
-        $comparison = Comparison::where('Id_Comparison', $Id_Comparison)->with('model')->first();
-        $list_comparisons = ListComparison::where('Id_Comparison', $Id_Comparison)->with('comparison', 'tractor', 'part')->get();
-        return view('records.index', compact('page', 'comparison', 'list_comparisons'));
-    }
-
-    public function insert(Request $request)
-    {
-        $request->validate([
-            'Id_Comparison' => 'required',
-            'Id_Tractor' => 'required',
-            'Id_Part' => 'required',
-            'No_Tractor_Record' => 'required',
-            'Result_Record' => 'required'
-        ]);
-
-        $now = Carbon::now();
-
-        DB::table('records')->insert(
-            [
-                'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
-                'Time_Record' => $now,
-                'No_Tractor_Record' => $request->No_Tractor_Record,
-                'Result_Record' => $request->Result_Record,
-            ]
-        );
-
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard.admin');
     }
 }
 
