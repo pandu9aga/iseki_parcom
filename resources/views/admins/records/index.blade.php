@@ -11,7 +11,7 @@
                 Record
             </div>
             
-            <form action="{{ route('record.admin.insert') }}" role="form" method="POST">
+            <form action="{{ route('record.admin.insert') }}" role="form" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="row mb-4">
                     <div class="col-6">
@@ -57,7 +57,7 @@
                     <div class="col-6">
                         <div class="form-group mb-2">
                             <label for="upload">Part Photo:</label>
-                            <input type="file" class="form-control" id="upload" accept="image/*" capture="environment" />
+                            <input type="file" class="form-control" name="Photo_Ng_Path" id="upload" accept="image/*" capture="environment" />
                         </div>
                         <button type="submit" class="btn btn-primary text-white mt-3" style="width: 100%">Submit</button>
                     </div>

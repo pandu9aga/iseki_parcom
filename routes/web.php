@@ -24,6 +24,7 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/dashboard_admin/submit', [DashboardController::class, 'submit'])->name('dashboard.admin.submit');
     Route::get('/dashboard_admin/export', [DashboardController::class, 'export'])->name('dashboard.admin.export');
     Route::get('/dashboard_admin/reset', [DashboardController::class, 'reset'])->name('dashboard.admin.reset');
+    Route::post('/dashboard/admin/approve', [DashboardController::class, 'approve'])->name('dashboard.admin.approve');
     Route::get('/record_admin/{Id_Comparison}', [RecordController::class, 'record'])->name('record.admin');
     Route::post('/record_admin', [RecordController::class, 'insert'])->name('record.admin.insert');
 

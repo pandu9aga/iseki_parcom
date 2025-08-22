@@ -97,9 +97,42 @@
                                 {{ $record->part->Code_Part }}
                             </td>
                             <td class="align-middle text-center">
-                                <span class="badge {{ $record->Result_Record === 'OK' ? 'bg-success' : 'bg-danger' }}">
-                                    {{ $record->Result_Record }}
-                                </span>
+                                @if ($record->Result_Record === 'OK')
+                                    <span class="badge bg-success">
+                                        {{ $record->Result_Record }}
+                                    </span>
+                                @elseif ($record->Result_Record === 'NG')
+                                    <span class="badge bg-danger view-detail"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#detailModal"
+                                        data-id="{{ $record->Id_Record }}"
+                                        data-no="{{ $record->No_Tractor_Record }}"
+                                        data-type="{{ $record->tractor->Type_Tractor }}"
+                                        data-comp="{{ $record->comparison->Name_Comparison }}"
+                                        data-part="{{ $record->part->Code_Part }}"
+                                        data-result="{{ $record->Result_Record }}"
+                                        data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
+                                        data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/'.$record->Photo_Ng_Path) : asset('storage/no-img.jpeg') }}"
+                                        data-approve="true">
+                                        {{ $record->Result_Record }}
+                                    </span>
+                                @elseif ($record->Result_Record === 'NG-OK')
+                                    <span class="badge bg-warning view-detail"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#detailModal"
+                                        data-id="{{ $record->Id_Record }}"
+                                        data-no="{{ $record->No_Tractor_Record }}"
+                                        data-type="{{ $record->tractor->Type_Tractor }}"
+                                        data-comp="{{ $record->comparison->Name_Comparison }}"
+                                        data-part="{{ $record->part->Code_Part }}"
+                                        data-result="{{ $record->Result_Record }}"
+                                        data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
+                                        data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/'.$record->Photo_Ng_Path) : asset('storage/no-img.jpeg') }}"
+                                        data-approvedby="{{ $record->user ? $record->user->Name_User : '-' }}"
+                                        data-approve="false">
+                                        {{ $record->Result_Record }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="align-middle text-center">
                                 {{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}
@@ -108,6 +141,41 @@
                         @endforeach
                     </tbody>
                 </table>
+                <!-- Modal -->
+                <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title text-white" id="detailModalLabel">Detail Record</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <table class="table table-bordered">
+                                    <tr><th>No Tractor</th><td id="modalNo"></td></tr>
+                                    <tr><th>Tractor Type</th><td id="modalType"></td></tr>
+                                    <tr><th>Comparison</th><td id="modalComp"></td></tr>
+                                    <tr><th>Part Prediction</th><td id="modalPart"></td></tr>
+                                    <tr>
+                                        <th>Result</th>
+                                        <td><span id="modalResult" class="badge"></span></td>
+                                    </tr>
+                                    <tr><th>Time</th><td id="modalTime"></td></tr>
+                                    <tr id="approvedByRow" style="display:none;">
+                                        <th>Approved By</th><td id="modalApprovedBy"></td>
+                                    </tr>
+                                </table>
+                                {{-- <form id="approveForm" action="{{ route('dashboard.admin.approve') }}" method="POST" class="mb-3">
+                                    @csrf
+                                    <input type="hidden" name="record_id" id="modalRecordId">
+                                    <button type="submit" id="approveBtn" class="btn btn-danger">Approve</button>
+                                </form> --}}
+                                <div class="text-center">
+                                    <img id="modalPhoto" src="" alt="Foto NG" class="img-fluid rounded shadow">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -123,5 +191,60 @@
 <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
 <script>
 new DataTable('#example');
+
+document.addEventListener('DOMContentLoaded', () => {
+    const detailModal = document.getElementById('detailModal');
+    const modalHeader = detailModal.querySelector('.modal-header');
+    const modalTitle = detailModal.querySelector('.modal-title');
+    const modalResult = document.getElementById('modalResult');
+    // const approveForm = document.getElementById('approveForm');
+    const approvedByRow = document.getElementById('approvedByRow');
+    const modalApprovedBy = document.getElementById('modalApprovedBy');
+
+    detailModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const result = button.getAttribute('data-result');
+        const approvedBy = button.getAttribute('data-approvedby');
+
+        // Isi data tabel
+        // document.getElementById('modalRecordId').value = button.getAttribute('data-id');
+        document.getElementById('modalNo').textContent = button.getAttribute('data-no');
+        document.getElementById('modalType').textContent = button.getAttribute('data-type');
+        document.getElementById('modalComp').textContent = button.getAttribute('data-comp');
+        document.getElementById('modalPart').textContent = button.getAttribute('data-part');
+        document.getElementById('modalTime').textContent = button.getAttribute('data-time');
+        document.getElementById('modalPhoto').src = button.getAttribute('data-photo');
+
+        // Reset header + badge style
+        modalHeader.className = 'modal-header';
+        modalResult.className = 'badge';
+
+        if (result === 'NG') {
+            modalHeader.classList.add('bg-danger', 'text-white');
+            modalResult.classList.add('bg-danger');
+            // approveForm.style.display = 'none';
+        } else if (result === 'NG-OK') {
+            modalHeader.classList.add('bg-warning', 'text-white');
+            modalResult.classList.add('bg-warning');
+            // approveForm.style.display = 'none';
+            modalApprovedBy.textContent = approvedBy;
+        } else { // OK
+            modalHeader.classList.add('bg-success', 'text-white');
+            modalResult.classList.add('bg-success');
+            // approveForm.style.display = 'none';
+        }
+
+        if (result === 'NG-OK') {
+            approvedByRow.style.display = '';
+            modalApprovedBy.textContent = approvedBy;
+        } else {
+            approvedByRow.style.display = 'none';
+            modalApprovedBy.textContent = '';
+        }
+
+        modalTitle.textContent = 'Detail Record';
+        modalResult.textContent = result;
+    });
+});
 </script>
 @endsection

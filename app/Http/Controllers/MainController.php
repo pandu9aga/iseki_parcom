@@ -21,7 +21,7 @@ class MainController extends Controller
         $page = 'dashboard';
 
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
@@ -82,7 +82,7 @@ class MainController extends Controller
         $page = 'dashboard';
 
         $date = $request->input('Day_Record');
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
@@ -92,14 +92,14 @@ class MainController extends Controller
     public function export(Request $request) {
         $date = $request->input('Day_Record_Hidden');
         $date = Carbon::parse($date)->format('Y-m-d H:i:s');
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         // Buat Spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Header kolom
-        $headers = ['No', 'No Tractor', 'Name Tractor', 'Comparison', 'Part Detection', 'Result', 'Time Record'];
+        // Header kolom (tambahkan Approved By)
+        $headers = ['No', 'No Tractor', 'Name Tractor', 'Comparison', 'Part Detection', 'Result', 'Time Record', 'Approved By'];
         $sheet->fromArray([$headers], NULL, 'A1');
 
         // Style header (tebal & background abu-abu)
@@ -107,12 +107,14 @@ class MainController extends Controller
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F4F4F']]
         ];
-        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
 
         // Isi data
         $row = 2;
         foreach ($records as $index => $record) {
-            // Tambahkan data ke Excel
+            // Ambil nama user, kalau null kasih kosong
+            $approvedBy = $record->user->Name_User ?? '';
+
             $sheet->fromArray([
                 $index + 1,
                 $record->No_Tractor_Record,
@@ -120,14 +122,19 @@ class MainController extends Controller
                 $record->comparison->Name_Comparison,
                 $record->part->Code_Part,
                 $record->Result_Record,
-                Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s')
+                Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s'),
+                $approvedBy
             ], NULL, 'A' . $row);
 
-            // Set warna dan tebal untuk "Correct" & "Incorrect"
+            // Set warna untuk kolom Result
             $correctnessCell = 'F' . $row;
             if ($record->Result_Record === 'OK') {
                 $sheet->getStyle($correctnessCell)->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => '008000']] // Hijau
+                ]);
+            } elseif ($record->Result_Record === 'NG-OK') {
+                $sheet->getStyle($correctnessCell)->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'de7e00']] // Oranye
                 ]);
             } else {
                 $sheet->getStyle($correctnessCell)->applyFromArray([
@@ -170,23 +177,33 @@ class MainController extends Controller
             'Id_Tractor' => 'required',
             'Id_Part' => 'required',
             'No_Tractor_Record' => 'required',
-            'Result_Record' => 'required'
+            'Result_Record' => 'required',
+            'Photo_Ng_Path' => 'nullable|file|image',
         ]);
 
         $now = Carbon::now();
+        $photoPath = null;
 
-        DB::table('records')->insert(
-            [
-                'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
-                'Time_Record' => $now,
-                'No_Tractor_Record' => $request->No_Tractor_Record,
-                'Result_Record' => $request->Result_Record,
-            ]
-        );
+        // Kalau hasil NG -> foto wajib diupload
+        if ($request->Result_Record === "NG") {
+            if ($request->hasFile('Photo_Ng_Path')) {
+                $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
+            } else {
+                return back()->withErrors(['Photo_Ng_Path' => 'Foto wajib diunggah jika hasil NG']);
+            }
+        }
 
-        return redirect()->route('dashboard');
+        DB::table('records')->insert([
+            'Id_Comparison'     => $request->Id_Comparison,
+            'Id_Tractor'        => $request->Id_Tractor,
+            'Id_Part'           => $request->Id_Part,
+            'Time_Record'       => $now,
+            'No_Tractor_Record' => $request->No_Tractor_Record,
+            'Result_Record'     => $request->Result_Record,
+            'Photo_Ng_Path'     => $photoPath, // hanya terisi kalau NG
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Record berhasil disimpan');
     }
 }
 

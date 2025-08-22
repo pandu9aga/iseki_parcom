@@ -90,19 +90,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" name="Name_User" value="" required>
                     </div>
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Username</label>
                         <input type="text" class="form-control" name="Username_User" value="" required>
                     </div>
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Password</label>
                         <input type="password" class="form-control" name="Password_User" value="" required>
                     </div>
-                    <div class="input-group input-group-outline my-3 is-filled">
+                    <div class="form-group pb-2">
                         <label class="form-label">Type</label>
                         <select class="form-control" name="Id_Type_User">
                             @foreach ($type_user as $type)
@@ -114,8 +114,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn bg-gradient-primary w-100 my-2">Submit</button>
-                    <button type="button" class="btn bg-gradient-secondary w-100 my-2 mb-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Submit</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -136,19 +136,19 @@
                 <div class="modal-body">
                     <input type="hidden" name="Id_User" id="edit-id">
 
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" name="Name_User" id="edit-name" required>
                     </div>
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Username</label>
                         <input type="text" class="form-control" name="Username_User" id="edit-Username" required>
                     </div>
-                    <div class="input-group input-group-outline my-3">
+                    <div class="form-group pb-2">
                         <label class="form-label">Password</label>
                         <input type="password" class="form-control" name="Password_User" id="edit-password" required>
                     </div>
-                    <div class="input-group input-group-outline my-3 is-filled">
+                    <div class="form-group pb-2">
                         <label class="form-label">Type</label>
                         <select class="form-control" name="Id_Type_User" id="edit-type">
                             @foreach ($type_user as $type)

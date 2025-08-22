@@ -22,7 +22,7 @@ class DashboardController extends Controller
         $page = 'dashboard';
 
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
@@ -33,7 +33,7 @@ class DashboardController extends Controller
         $page = 'dashboard';
 
         $date = $request->input('Day_Record');
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
@@ -43,14 +43,14 @@ class DashboardController extends Controller
     public function export(Request $request) {
         $date = $request->input('Day_Record_Hidden');
         $date = Carbon::parse($date)->format('Y-m-d H:i:s');
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part')->get();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
 
         // Buat Spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Header kolom
-        $headers = ['No', 'No Tractor', 'Name Tractor', 'Comparison', 'Part Detection', 'Result', 'Time Record'];
+        // Header kolom (tambahkan Approved By)
+        $headers = ['No', 'No Tractor', 'Name Tractor', 'Comparison', 'Part Detection', 'Result', 'Time Record', 'Approved By'];
         $sheet->fromArray([$headers], NULL, 'A1');
 
         // Style header (tebal & background abu-abu)
@@ -58,12 +58,14 @@ class DashboardController extends Controller
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F4F4F']]
         ];
-        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
 
         // Isi data
         $row = 2;
         foreach ($records as $index => $record) {
-            // Tambahkan data ke Excel
+            // Ambil nama user, kalau null kasih kosong
+            $approvedBy = $record->user->Name_User ?? '';
+
             $sheet->fromArray([
                 $index + 1,
                 $record->No_Tractor_Record,
@@ -71,14 +73,19 @@ class DashboardController extends Controller
                 $record->comparison->Name_Comparison,
                 $record->part->Code_Part,
                 $record->Result_Record,
-                Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s')
+                Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s'),
+                $approvedBy
             ], NULL, 'A' . $row);
 
-            // Set warna dan tebal untuk "Correct" & "Incorrect"
+            // Set warna untuk kolom Result
             $correctnessCell = 'F' . $row;
             if ($record->Result_Record === 'OK') {
                 $sheet->getStyle($correctnessCell)->applyFromArray([
                     'font' => ['bold' => true, 'color' => ['rgb' => '008000']] // Hijau
+                ]);
+            } elseif ($record->Result_Record === 'NG-OK') {
+                $sheet->getStyle($correctnessCell)->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'de7e00']] // Oranye
                 ]);
             } else {
                 $sheet->getStyle($correctnessCell)->applyFromArray([
@@ -103,6 +110,16 @@ class DashboardController extends Controller
     public function reset(){
         Record::truncate();
         return redirect()->route('dashboard.admin');
+    }
+
+    public function approve(Request $request)
+    {
+        $record = Record::findOrFail($request->record_id);
+        $record->Result_Record = 'NG-OK';
+        $record->Id_User = session('Id_User'); // ambil dari session custom
+        $record->save();
+
+        return redirect()->back()->with('success', 'Record berhasil di-approve!');
     }
 }
 

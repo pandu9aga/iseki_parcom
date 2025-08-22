@@ -10,7 +10,7 @@ class Record extends Model
     protected $primaryKey = 'Id_Record';
     public $timestamps = false;
 
-    protected $fillable = ['Id_Comparison', 'Id_Tractor', 'Id_Part', 'No_Tractor_Record', 'Result_Record', 'Time_Record'];
+    protected $fillable = ['Id_Comparison', 'Id_Tractor', 'Id_Part', 'No_Tractor_Record', 'Result_Record', 'Time_Record', 'Photo_Ng_Path', 'Id_User'];
 
     public function comparison()
     {
@@ -25,5 +25,10 @@ class Record extends Model
     public function part()
     {
         return $this->belongsTo(Part::class, 'Id_Part', 'Id_Part');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'Id_User', 'Id_User');
     }
 }

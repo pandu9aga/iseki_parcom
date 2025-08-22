@@ -26,23 +26,33 @@ class RecordController extends Controller
             'Id_Tractor' => 'required',
             'Id_Part' => 'required',
             'No_Tractor_Record' => 'required',
-            'Result_Record' => 'required'
+            'Result_Record' => 'required',
+            'Photo_Ng_Path' => 'nullable|file|image',
         ]);
 
         $now = Carbon::now();
+        $photoPath = null;
 
-        DB::table('records')->insert(
-            [
-                'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
-                'Time_Record' => $now,
-                'No_Tractor_Record' => $request->No_Tractor_Record,
-                'Result_Record' => $request->Result_Record,
-            ]
-        );
+        // Kalau hasil NG -> foto wajib diupload
+        if ($request->Result_Record === "NG") {
+            if ($request->hasFile('Photo_Ng_Path')) {
+                $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
+            } else {
+                return back()->withErrors(['Photo_Ng_Path' => 'Foto wajib diunggah jika hasil NG']);
+            }
+        }
 
-        return redirect()->route('dashboard.admin');
+        DB::table('records')->insert([
+            'Id_Comparison'     => $request->Id_Comparison,
+            'Id_Tractor'        => $request->Id_Tractor,
+            'Id_Part'           => $request->Id_Part,
+            'Time_Record'       => $now,
+            'No_Tractor_Record' => $request->No_Tractor_Record,
+            'Result_Record'     => $request->Result_Record,
+            'Photo_Ng_Path'     => $photoPath, // hanya terisi kalau NG
+        ]);
+
+        return redirect()->route('dashboard.admin')->with('success', 'Record berhasil disimpan');
     }
 }
 
