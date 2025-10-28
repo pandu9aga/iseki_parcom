@@ -2,7 +2,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Comparison;
 use App\Models\ListComparison;
@@ -171,6 +173,135 @@ class MainController extends Controller
     }
 
     public function insert(Request $request)
+    {
+        $request->validate([
+            'Id_Comparison' => 'required',
+            'Id_Tractor' => 'required',
+            'Id_Part' => 'required',
+            'No_Tractor_Record' => 'required',
+            'Result_Record' => 'required',
+            'Photo_Ng_Path' => 'nullable|file|image',
+        ]);
+
+        $now = Carbon::now();
+        $photoPath = null;
+
+        // Ambil Name_Comparison dari tabel comparisons
+        $comparison = DB::table('comparisons')->where('Id_Comparison', $request->Id_Comparison)->first();
+        if (!$comparison) {
+            return back()->withErrors(['Id_Comparison' => 'Comparison tidak ditemukan']);
+        }
+
+        $processName = $comparison->Name_Comparison; // Contoh: "Ring Synchronizer"
+        $processName = strtolower(str_replace(' ', '_', $processName)); // "ring_synchronizer"
+        $processName = 'parcom_' . $processName; // "parcom_ring_synchronizer"
+
+        // --- LOGIKA UPDATE RECORD DI DATABASE PODIUM LANGSUNG ---
+        // --- PERUBAHAN: Format sequence_no ---
+        // Format No_Tractor_Record ke 5 digit dengan leading zero
+        // Misal: "6731" -> "06731", "1" -> "00001", "12345" -> "12345"
+        $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+        $timestamp = $now->format('Y-m-d H:i:s');
+
+        try {
+            // 1. Cari plan di database PODIUM berdasarkan Sequence_No_Plan (dengan format yang disesuaikan)
+            $plan = DB::connection('podium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            if (!$plan) {
+                return back()->withErrors(['general' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan di sistem PODIUM."]);
+            }
+
+            $modelName = $plan->Model_Name_Plan;
+
+            // 2. Cari rule di database PODIUM berdasarkan Type_Rule = Model_Name_Plan
+            $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
+            if (!$rule) {
+                return back()->withErrors(['general' => "Rule untuk model '{$modelName}' tidak ditemukan di sistem PODIUM."]);
+            }
+
+            // 3. Decode Rule_Rule
+            $ruleSequence = json_decode($rule->Rule_Rule, true);
+            if (!is_array($ruleSequence)) {
+                return back()->withErrors(['general' => "Format rule untuk model '{$modelName}' rusak."]);
+            }
+
+            // 4. Cek apakah process_name ada dalam rule
+            $position = null;
+            foreach ($ruleSequence as $key => $process) {
+                if ($process === $processName) {
+                    $position = (int)$key;
+                    break;
+                }
+            }
+
+            if ($position === null) {
+                return back()->withErrors(['general' => "Proses '{$processName}' tidak termasuk dalam rule untuk model '{$modelName}'."]);
+            }
+
+            // 5. Decode Record_Plan
+            $record = [];
+            if ($plan->Record_Plan) {
+                $decodedRecord = json_decode($plan->Record_Plan, true);
+                if (is_array($decodedRecord)) {
+                    $record = $decodedRecord;
+                }
+                // Jika tidak array atau null, biarkan $record tetap array kosong
+            }
+
+            // 6. Cek apakah proses sebelumnya sudah dilakukan
+            $previousProcessesDone = true;
+            $missingPrevious = [];
+            for ($i = 1; $i < $position; $i++) {
+                $prevProcess = $ruleSequence[$i] ?? null;
+                if ($prevProcess && !isset($record[$prevProcess])) {
+                    $previousProcessesDone = false;
+                    $missingPrevious[] = $prevProcess;
+                }
+            }
+
+            if (!$previousProcessesDone) {
+                return back()->withErrors(['general' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)]);
+            }
+
+            // 7. Update record: tambahkan proses dan timestamp
+            $record[$processName] = $timestamp;
+
+            // 8. Simpan kembali ke database PODIUM
+            DB::connection('podium')->table('plans')
+                ->where('Id_Plan', $plan->Id_Plan)
+                ->update(['Record_Plan' => json_encode($record, JSON_UNESCAPED_UNICODE)]);
+
+            // Logika berhasil dihilangkan, bisa ditambahkan jika perlu
+
+        } catch (\Exception $e) {
+            // Jika terjadi exception saat update database PODIUM
+            return back()->withErrors(['general' => 'Gagal mencatat ke sistem PODIUM: ' . $e->getMessage()]);
+        }
+
+        // --- LOGIKA LAMA INSERT KE RECORDS DI PARCOM ---
+        // Kalau hasil NG -> foto wajib diupload
+        if ($request->Result_Record === "NG") {
+            if ($request->hasFile('Photo_Ng_Path')) {
+                $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
+            } else {
+                return back()->withErrors(['Photo_Ng_Path' => 'Foto wajib diunggah jika hasil NG']);
+            }
+        }
+
+        // Jika sukses update PODIUM, baru insert ke records PARCOM
+        DB::table('records')->insert([
+            'Id_Comparison'     => $request->Id_Comparison,
+            'Id_Tractor'        => $request->Id_Tractor,
+            'Id_Part'           => $request->Id_Part,
+            'Time_Record'       => $now,
+            'No_Tractor_Record' => $request->No_Tractor_Record, // Simpan nilai asli jika perlu
+            'Result_Record'     => $request->Result_Record,
+            'Photo_Ng_Path'     => $photoPath, // hanya terisi kalau NG
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Record berhasil disimpan');
+    }
+
+    public function insertold(Request $request)
     {
         $request->validate([
             'Id_Comparison' => 'required',
