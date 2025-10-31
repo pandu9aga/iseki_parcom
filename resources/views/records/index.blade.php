@@ -31,7 +31,7 @@
                 </div>
             @endif
             
-            <form action="{{ route('record.insert') }}" role="form" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('record.insert') }}" role="form" method="POST" enctype="multipart/form-data" id="recordForm">
                 @csrf
                 <div class="row mb-4">
                     <div class="col-6">
@@ -42,7 +42,8 @@
                         <div class="form-group mb-2">
                             <label for="Type_Tractor">Tractor Type:</label>
                             <input type="text" class="form-control" name="Type_Tractor" id="Type_Tractor" placeholder="Scan QR" readonly required>
-                            <input type="hidden" name="Id_Comparison" value="{{ $comparison->Id_Comparison }}" required>
+                            {{-- <input type="hidden" name="Id_Comparison" value="{{ $comparison->Id_Comparison }}" required> --}}
+                            <input type="hidden" name="Id_Comparison" id="Id_Comparison" value="{{ $comparison->Id_Comparison }}" required>
                             <input type="hidden" name="Id_Tractor" id="Id_Tractor" required>
                         </div>
                         <div class="form-group mb-2">
@@ -73,13 +74,20 @@
                     </div>
                     <div id="result-msg"></div>
                 </div>
+
+                <!-- Tambahkan div untuk notifikasi validasi rule -->
+                <div id="validation-error-message" class="alert alert-danger alert-dismissible fade show mb-3" role="alert" style="display: none;">
+                    <strong id="validation-error-text"></strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <div class="row mb-4">
                     <div class="col-6">
                         <div class="form-group mb-2">
                             <label for="upload">Part Photo:</label>
                             <input type="file" class="form-control" name="Photo_Ng_Path" id="upload" accept="image/*" capture="environment" />
                         </div>
-                        <button type="submit" class="btn btn-primary text-white mt-3" style="width: 100%">Submit</button>
+                        <button type="submit" class="btn btn-primary text-white mt-3" style="width: 100%" id="submitBtn">Submit</button>
                     </div>
                     <div class="col-6">
                         <label for="preview">Preview Photo:</label>
@@ -98,6 +106,7 @@
 <style>
     #preview { max-width: 100%; max-height: auto; display: none; }
 </style>
+<meta name="csrf-token" content="{{ csrf_token() }}">
 @endsection
 
 @section('script')
@@ -131,14 +140,99 @@
             document.getElementById("Id_Tractor").value = match.tractor.Id_Tractor;
             document.getElementById("Type_Tractor").value = match.tractor.Type_Tractor;
             document.getElementById("Code_Part").value = match.part.Code_Part;
+            // --- PASTIKAN INI DI-SET SEBELUM validateRuleOnServer ---
+            document.getElementById("Id_Comparison").value = match.comparison.Id_Comparison; // Ganti 'comparison' sesuai struktur data kamu
         } else {
             document.getElementById("Id_Tractor").value = '';
             document.getElementById("Type_Tractor").value = '';
             document.getElementById("Code_Part").value = '';
+            document.getElementById("Id_Comparison").value = ''; // Kosongkan jika tidak match
         }
+
+        // --- Panggil validasi setelah semua data relevan diisi ---
+        await validateRuleOnServer(no);
 
         qrScanner.clear();
         checkResultRecord();
+    }
+
+        // Fungsi untuk validasi rule ke server PARCOM
+    async function validateRuleOnServer(sequenceNo) {
+        // Ambil Id_Comparison dari hidden input di form
+        const idComparisonElement = document.querySelector('input[name="Id_Comparison"]');
+        const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+
+        // Cek apakah elemen-elemen yang dibutuhkan ditemukan
+        if (!idComparisonElement || !csrfTokenElement) {
+            console.error('Elemen Id_Comparison atau CSRF Token tidak ditemukan.');
+            // Tampilkan notifikasi error umum
+            document.getElementById('validation-error-text').textContent = 'Gagal memvalidasi: Elemen formulir tidak ditemukan.';
+            document.getElementById('validation-error-message').style.display = 'block';
+            // Keep tombol submit dan upload foto disabled
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('upload').disabled = true;
+            return; // Hentikan eksekusi fungsi
+        }
+
+        const idComparison = idComparisonElement.value;
+        const csrfToken = csrfTokenElement.getAttribute('content');
+
+        if (!idComparison) {
+            console.error('Id_Comparison kosong.');
+            document.getElementById('validation-error-text').textContent = 'Gagal memvalidasi: Id_Comparison tidak valid.';
+            document.getElementById('validation-error-message').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('upload').disabled = true;
+            return;
+        }
+
+        // Sembunyikan notifikasi error sebelumnya
+        document.getElementById('validation-error-message').style.display = 'none';
+
+        // Disable tombol submit dan upload foto sementara
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('upload').disabled = true;
+
+        try {
+            const response = await fetch('{{ route("record.validate_rule") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken // Gunakan token dari meta tag
+                },
+                body: JSON.stringify({
+                    sequence_no: sequenceNo,
+                    id_comparison: idComparison // Gunakan value dari input
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Validasi sukses, proses sebelumnya selesai
+                console.log('Validasi rule berhasil:', data.message);
+                // Enable tombol submit dan upload foto
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('upload').disabled = false;
+            } else {
+                // Validasi gagal, proses sebelumnya belum selesai
+                console.error('Validasi rule gagal:', data.message);
+                // Tampilkan notifikasi error besar
+                document.getElementById('validation-error-text').textContent = data.message;
+                document.getElementById('validation-error-message').style.display = 'block';
+                // Keep tombol submit dan upload foto disabled
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('upload').disabled = true;
+            }
+        } catch (error) {
+            console.error('Error saat validasi rule:', error);
+            // Tampilkan notifikasi error umum
+            document.getElementById('validation-error-text').textContent = 'Gagal menghubungi server untuk validasi rule.';
+            document.getElementById('validation-error-message').style.display = 'block';
+            // Keep tombol submit dan upload foto disabled
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('upload').disabled = true;
+        }
     }
 
     document.getElementById("scanQR").addEventListener("click", () => {

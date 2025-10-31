@@ -301,6 +301,140 @@ class MainController extends Controller
         return redirect()->route('dashboard')->with('success', 'Record berhasil disimpan');
     }
 
+    public function validateRule(Request $request)
+    {
+        // Validasi input
+        $request->validate([
+            'sequence_no' => 'required|string',
+            'id_comparison' => 'required|integer'
+        ]);
+
+        $sequenceNo = $request->input('sequence_no');
+        $idComparison = $request->input('id_comparison');
+
+        // Ambil Name_Comparison dari tabel comparisons
+        $comparison = DB::table('comparisons')->where('Id_Comparison', $idComparison)->first();
+        if (!$comparison) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Comparison tidak ditemukan untuk Id_Comparison: ' . $idComparison
+            ], 400);
+        }
+
+        $processName = $comparison->Name_Comparison;
+        $processName = strtolower(str_replace(' ', '_', $processName));
+        $processName = 'parcom_' . $processName;
+
+        // --- LOGIKA VALIDASI URUTAN DARI DATABASE PODIUM ---
+        // --- PERUBAHAN: Format sequence_no ---
+        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+
+        try {
+            // 1. Cari plan di database PODIUM berdasarkan Sequence_No_Plan
+            $plan = DB::connection('podium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            if (!$plan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan di sistem PODIUM."
+                ], 404);
+            }
+
+            $modelName = $plan->Model_Name_Plan;
+
+            // 2. Cari rule di database PODIUM berdasarkan Type_Rule
+            $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
+            if (!$rule) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Rule untuk model '{$modelName}' tidak ditemukan di sistem PODIUM."
+                ], 400);
+            }
+
+            // 3. Ambil Rule_Rule (ini berupa string JSON dari Query Builder)
+            $ruleSequenceRaw = $rule->Rule_Rule;
+
+            // Coba decode string JSON menjadi array
+            $ruleSequence = null;
+            if (is_string($ruleSequenceRaw)) {
+                $ruleSequence = json_decode($ruleSequenceRaw, true); // true untuk mengembalikan array asosiatif
+            }
+
+            // Pastikan $ruleSequence adalah array hasil decode JSON.
+            if (!is_array($ruleSequence)) {
+                // Jika decode gagal atau nilainya bukan string JSON valid, kembalikan error
+                return response()->json([
+                    'success' => false,
+                    'message' => "Format rule untuk model '{$modelName}' rusak atau tidak valid."
+                ], 400);
+            }
+
+            // 4. Cek apakah process_name ada dalam rule
+            $position = null;
+            foreach ($ruleSequence as $key => $process) {
+                if ($process === $processName) {
+                    $position = (int)$key;
+                    break;
+                }
+            }
+
+            if ($position === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Proses '{$processName}' tidak termasuk dalam rule untuk model '{$modelName}'."
+                ], 400);
+            }
+
+            // 5. Ambil Record_Plan (ini berupa string JSON dari Query Builder)
+            $recordRaw = $plan->Record_Plan;
+
+            // Coba decode string JSON menjadi array
+            $record = [];
+            if (is_string($recordRaw) && !empty($recordRaw)) {
+                $decodedRecord = json_decode($recordRaw, true);
+                if (is_array($decodedRecord)) {
+                    $record = $decodedRecord;
+                } else {
+                    // Jika decode gagal atau nilainya bukan string JSON valid, kembalikan error
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Format Record_Plan untuk plan ini rusak."
+                    ], 500); // atau 400, tergantung kebijakan
+                }
+            } // Jika null atau kosong, biarkan $record sebagai array kosong
+
+            // 6. Cek apakah proses sebelumnya sudah dilakukan
+            $previousProcessesDone = true;
+            $missingPrevious = [];
+            for ($i = 1; $i < $position; $i++) {
+                $prevProcess = $ruleSequence[$i] ?? null;
+                if ($prevProcess && !isset($record[$prevProcess])) {
+                    $previousProcessesDone = false;
+                    $missingPrevious[] = $prevProcess;
+                }
+            }
+
+            if (!$previousProcessesDone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+                ], 400);
+            }
+
+            // Jika semua validasi di atas lolos
+            return response()->json([
+                'success' => true,
+                'message' => "Semua proses sebelumnya sudah selesai. Siap melanjutkan."
+            ]);
+
+        } catch (\Exception $e) {
+            // Tangani exception umum
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memvalidasi rule di sistem PODIUM: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function insertold(Request $request)
     {
         $request->validate([

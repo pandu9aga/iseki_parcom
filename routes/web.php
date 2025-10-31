@@ -14,6 +14,7 @@ Route::get('/dashboard/export', [MainController::class, 'export'])->name('dashbo
 Route::get('/dashboard/reset', [MainController::class, 'reset'])->name('dashboard.reset');
 Route::get('/record/{Id_Comparison}', [MainController::class, 'record'])->name('record');
 Route::post('/record', [MainController::class, 'insert'])->name('record.insert');
+Route::post('/record/validate-rule', [MainController::class, 'validateRule'])->name('record.validate_rule');
 
 Route::get('/login', [MainController::class, 'signin'])->name('login');
 Route::post('/login/auth', [MainController::class, 'login'])->name('login.auth');
