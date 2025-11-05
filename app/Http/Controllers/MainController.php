@@ -265,15 +265,39 @@ class MainController extends Controller
             // 7. Update record: tambahkan proses dan timestamp
             $record[$processName] = $timestamp;
 
-            // 8. Simpan kembali ke database PODIUM
+            // --- LOGIKA TAMBAHAN: Cek apakah SEMUA proses dalam rule sudah selesai ---
+            $allProcessesCompleted = true;
+            // Kita iterasi semua proses yang *harus* ada berdasarkan rule
+            foreach ($ruleSequence as $requiredProcessName) {
+                if (!isset($record[$requiredProcessName])) {
+                    $allProcessesCompleted = false;
+                    // Kita tidak perlu mencari tahu yang mana saja, cukup tahu bahwa belum selesai
+                    break; // Cukup satu yang belum selesai untuk menggagalkan status 'done'
+                }
+            }
+
+            // 8. Simpan kembali ke database PODIUM (Record_Plan dan Status_Plan)
+            $updateData = ['Record_Plan' => json_encode($record, JSON_UNESCAPED_UNICODE)];
+
+            // Jika semua proses selesai, tambahkan status 'done'
+            if ($allProcessesCompleted) {
+                $updateData['Status_Plan'] = 'done';
+                // \Log::info("Status_Plan diupdate menjadi 'done' untuk Id_Plan: {$plan->Id_Plan} (Sequence: {$sequenceNoFormatted}) karena semua proses selesai.");
+            } else {
+                // Opsional: Jika sebelumnya 'done' dan sekarang ada proses yang hilang (misalnya data dihapus), reset status
+                // Untuk kasusmu, biasanya status hanya berubah ke 'done', jadi bisa diabaikan.
+                // $updateData['Status_Plan'] = 'pending'; // atau status lain sesuai kebijakan
+            }
+
             DB::connection('podium')->table('plans')
                 ->where('Id_Plan', $plan->Id_Plan)
-                ->update(['Record_Plan' => json_encode($record, JSON_UNESCAPED_UNICODE)]);
+                ->update($updateData);
 
             // Logika berhasil dihilangkan, bisa ditambahkan jika perlu
 
         } catch (\Exception $e) {
             // Jika terjadi exception saat update database PODIUM
+            // \Log::error('Gagal mencatat ke database PODIUM dari PARCOM insert: ' . $e->getMessage());
             return back()->withErrors(['general' => 'Gagal mencatat ke sistem PODIUM: ' . $e->getMessage()]);
         }
 
