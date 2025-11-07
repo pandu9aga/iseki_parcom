@@ -6,6 +6,7 @@ use App\Http\Controllers\MainController;
 use App\Http\Controllers\Admins\DashboardController;
 use App\Http\Controllers\Admins\RecordController;
 use App\Http\Controllers\Admins\UserController;
+use App\Http\Controllers\Admins\ModelAiController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
 Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
@@ -33,4 +34,9 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::post('/user/create', [UserController::class, 'create'])->name('user.create');
     Route::put('/user/update/{Id_User}', [UserController::class, 'update'])->name('user.update');
     Route::delete('/user/delete/{Id_User}', [UserController::class, 'destroy'])->name('user.destroy');
+
+    Route::get('/model', [ModelAiController::class, 'index'])->name('model');
+    Route::post('/model/create', [ModelAiController::class, 'create'])->name('model.create');
+    Route::put('/model/update/{Id_Model}', [ModelAiController::class, 'update'])->name('model.update');
+    Route::delete('/model/delete/{Id_Model}', [ModelAiController::class, 'destroy'])->name('model.destroy');
 });
