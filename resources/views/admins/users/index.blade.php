@@ -207,7 +207,7 @@
 @endsection
 
 @section('script')
-<script src="{{asset('assets/js/jquery-3.7.1.min.js')}}"></script>
+<script src="{{asset('assets/js/jquery.min.js')}}"></script>
 <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
 <script>
 new DataTable('#example');

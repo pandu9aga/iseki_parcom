@@ -25,7 +25,7 @@
             @endif
 
             <!-- Tombol Add -->
-            <button class="btn btn-primary text-white mx-3" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <button class="btn btn-primary text-white mx-3" data-bs-toggle="modal" data-bs-target="#addModelModal">
                 <span style="padding-left: 50px; padding-right: 50px;"><b>+</b> Add</span>
             </button>
 
@@ -53,12 +53,12 @@
                             </td>
                             <td class="align-middle text-center">
                                 <div class="d-flex justify-content-center">
-                                    <a href="#" class="btn btn-primary text-white text-xs mx-1" data-bs-toggle="modal" data-bs-target="#editUserModal"
-                                        onclick="setEditUser({{ $m }})">
+                                    <a href="#" class="btn btn-primary text-white text-xs mx-1" data-bs-toggle="modal" data-bs-target="#editModelModal"
+                                        onclick="setEditModel({{ $m->Id_Model }}, '{{ $m->Name_Model }}', '{{ $m->Path_Model }}')">
                                         edit
                                     </a>
-                                    <a href="#" class="btn btn-danger text-white text-xs mx-1" data-bs-toggle="modal" data-bs-target="#deleteUserModal"
-                                        onclick="setDeleteUser({{ $m }})">
+                                    <a href="#" class="btn btn-danger text-white text-xs mx-1" data-bs-toggle="modal" data-bs-target="#deleteModelModal"
+                                        onclick="setDeleteModel({{ $m->Id_Model }}, '{{ $m->Name_Model }}', '{{ $m->Path_Model }}')">
                                         delete
                                     </a>
                                 </div>
@@ -72,28 +72,36 @@
     </section>
 </div>
 
-<!-- Modal Add User -->
-<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+<!-- Modal Add Model AI -->
+<div class="modal fade" id="addModelModal" tabindex="-1" aria-labelledby="addModelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="{{ route('user.create') }}" role="form" method="POST">
+            <form action="{{ route('model.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header bg-primary">
-                    <h5 class="modal-title text-white" id="addUserModalLabel">Add User</h5>
+                    <h5 class="modal-title text-white">Add Model AI</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group pb-2">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="Name_User" value="" required>
+                        <label class="form-label">Name Model</label>
+                        <input type="text" class="form-control" name="Name_Model" required>
                     </div>
                     <div class="form-group pb-2">
-                        <label class="form-label">Username</label>
-                        <input type="text" class="form-control" name="Username_User" value="" required>
+                        <label class="form-label">Path (tanpa spasi, akan di-slug)</label>
+                        <input type="text" class="form-control" name="Path_Model" required placeholder="contoh: ring_synchronizer">
                     </div>
                     <div class="form-group pb-2">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="Password_User" value="" required>
+                        <label class="form-label">Upload metadata.json</label>
+                        <input type="file" class="form-control" name="metadata" accept=".json" required>
+                    </div>
+                    <div class="form-group pb-2">
+                        <label class="form-label">Upload model.json</label>
+                        <input type="file" class="form-control" name="model_file" accept=".json" required>
+                    </div>
+                    <div class="form-group pb-2">
+                        <label class="form-label">Upload weights.bin</label>
+                        <input type="file" class="form-control" name="weights" accept=".bin" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -105,31 +113,39 @@
     </div>
 </div>
 
-<!-- Modal Edit User -->
-<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+<!-- Modal Edit Model AI -->
+<div class="modal fade" id="editModelModal" tabindex="-1" aria-labelledby="editModelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form id="editUserForm" method="POST">
+            <form id="editModelForm" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="modal-header bg-primary">
-                    <h5 class="modal-title text-white" id="editUserModalLabel">Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    <h5 class="modal-title text-white">Edit Model AI</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="Id_User" id="edit-id">
+                    <input type="hidden" name="Id_Model" id="edit-id">
 
                     <div class="form-group pb-2">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="Name_User" id="edit-name" required>
+                        <label class="form-label">Name Model</label>
+                        <input type="text" class="form-control" name="Name_Model" id="edit-name" required>
                     </div>
                     <div class="form-group pb-2">
-                        <label class="form-label">Username</label>
-                        <input type="text" class="form-control" name="Username_User" id="edit-Username" required>
+                        <label class="form-label">Path (akan di-slug)</label>
+                        <input type="text" class="form-control" name="Path_Model" id="edit-path" required>
                     </div>
                     <div class="form-group pb-2">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="Password_User" id="edit-password" required>
+                        <label class="form-label">Ganti metadata.json (opsional)</label>
+                        <input type="file" class="form-control" name="metadata" accept=".json">
+                    </div>
+                    <div class="form-group pb-2">
+                        <label class="form-label">Ganti model.json (opsional)</label>
+                        <input type="file" class="form-control" name="model_file" accept=".json">
+                    </div>
+                    <div class="form-group pb-2">
+                        <label class="form-label">Ganti weights.bin (opsional)</label>
+                        <input type="file" class="form-control" name="weights" accept=".bin">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -141,31 +157,21 @@
     </div>
 </div>
 
-<!-- Modal Delete User -->
-<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+<!-- Modal Delete Model AI -->
+<div class="modal fade" id="deleteModelModal" tabindex="-1" aria-labelledby="deleteModelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form id="deleteUserForm" method="POST">
+            <form id="deleteModelForm" method="POST">
                 @csrf
                 @method('DELETE')
                 <div class="modal-header bg-danger">
-                    <h4 class="modal-title text-white" id="deleteUserModalLabel">Delete User</h4>
+                    <h5 class="modal-title text-white">Delete Model AI</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure to delete this user:</p>
-                    <table>
-                        <tr>
-                            <td>Name</td>
-                            <td>:</td>
-                            <td><b class="text-danger" id="delete-user-name"></b></td>
-                        </tr>
-                        <tr>
-                            <td>Username</td>
-                            <td>:</td>
-                            <td><b class="text-danger" id="delete-user-Username"></b></td>
-                        </tr>
-                    </table>
+                    <p>Yakin hapus model ini beserta folder-nya?</p>
+                    <p><b>Nama:</b> <span id="delete-name"></span></p>
+                    <p><b>Path:</b> <span id="delete-path"></span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-danger">Delete</button>
@@ -182,12 +188,23 @@
 @endsection
 
 @section('script')
-<script src="{{asset('assets/js/jquery-3.7.1.min.js')}}"></script>
+<script src="{{asset('assets/js/jquery.min.js')}}"></script>
 <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
 <script>
 new DataTable('#example');
 </script>
 <script>
-    
+function setEditModel(id, name, path) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-path').value = path;
+    document.getElementById('editModelForm').action = `/iseki_parcom/public/model/update/${id}`;
+}
+
+function setDeleteModel(id, name, path) {
+    document.getElementById('delete-name').textContent = name;
+    document.getElementById('delete-path').textContent = path;
+    document.getElementById('deleteModelForm').action = `/iseki_parcom/public/model/delete/${id}`;
+}
 </script>
 @endsection

@@ -3,79 +3,146 @@
 namespace App\Http\Controllers\Admins;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\ModelAi;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+
 
 class ModelAiController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         $page = "model";
-
         $model = ModelAi::all();
         return view('admins.models.index', compact('page', 'model'));
     }
-    
-    public function create(Request $request)
+
+    protected function getBasePath()
     {
-        // melakukan validasi data
-        $request->validate([
-            'Name_User' => 'required',
-            'Username_User' => 'required|unique:users,Username_User',
-            'Password_User' => 'required',
-            'Id_Type_User' => 'required'
-        ],
-        [
-            'Name_User.required' => 'Nama wajib diisi',
-            'Username_User.required' => 'Username wajib diisi',
-            'Username_User.unique' => 'Username sudah digunakan, pilih yang lain',
-            'Password_User.required' => 'Password wajib diisi',
-            'Id_Type_User.required' => 'Type User wajib diisi'
-        ]);
-        
-        //tambah data user
-        DB::table('users')->insert([
-            'Name_User' => $request->input('Name_User'),
-            'Username_User' => $request->input('Username_User'),
-            'Password_User' => $request->input('Password_User'),
-            'Id_Type_User' => $request->input('Id_Type_User')
-        ]);
-        
-        return redirect()->route('user');
+        return public_path('storage/model');
     }
 
-    public function update(Request $request, string $Id_User)
+    public function store(Request $request)
     {
-        // melakukan validasi data
         $request->validate([
-            'Name_User' => 'required',
-            'Username_User' => 'required|unique:users,Username_User,' . $Id_User . ',Id_User',
-            'Password_User' => 'required',
-            'Id_Type_User' => 'required'
-        ],
-        [
-            'Name_User.required' => 'Nama wajib diisi',
-            'Username_User.required' => 'Username wajib diisi',
-            'Username_User.unique' => 'Username sudah digunakan, pilih yang lain',
-            'Password_User.required' => 'Password wajib diisi',
-            'Id_Type_User.required' => 'Type User wajib diisi'
+            'Name_Model' => 'required|string|max:255',
+            'Path_Model' => 'required|string|max:255|unique:models,Path_Model',
         ]);
-    
-        //update data user
-        DB::table('users')->where('Id_User',$Id_User)->update([
-            'Name_User' => $request->input('Name_User'),
-            'Username_User' => $request->input('Username_User'),
-            'Password_User' => $request->input('Password_User'),
-            'Id_Type_User' => $request->input('Id_Type_User')
+
+        // Validasi manual ekstensi file
+        $this->validateFiles($request);
+
+        $pathName = $request->Path_Model;
+
+        // Buat folder jika belum ada
+        if (!File::exists($pathName)) {
+            File::makeDirectory($pathName, 0755, true);
+        }
+
+        // Simpan file
+        $request->file('metadata')->move($pathName, 'metadata.json');
+        $request->file('model_file')->move($pathName, 'model.json');
+        $request->file('weights')->move($pathName, 'weights.bin');
+
+        ModelAi::create([
+            'Name_Model' => $request->Name_Model,
+            'Path_Model' => $pathName,
         ]);
-                
-        return redirect()->route('user');
+
+        return redirect()->route('model')->with('success', 'Model berhasil ditambahkan.');
     }
 
-    public function destroy(User $Id_User)
+    public function update(Request $request, $Id_Model)
     {
-        $Id_User->delete();
-        
-        return redirect()->route('user')->with('success','Data berhasil di hapus' );
+        $model = ModelAi::findOrFail($Id_Model);
+        $request->validate([
+            'Name_Model' => 'required|string|max:255',
+            'Path_Model' => "required|string|max:255|unique:models,Path_Model,{$Id_Model},Id_Model",
+        ]);
+
+        if (
+            $request->hasFile('metadata') ||
+            $request->hasFile('model_file') ||
+            $request->hasFile('weights')
+        ) {
+            $this->validateFiles($request);
+        }
+
+        $oldPath = $model->Path_Model;
+        $newPath = Str::slug($request->Path_Model, '_');
+
+        $base = $this->getBasePath();
+        $oldFullPath = $base . '/' . $oldPath;
+        $newFullPath = $base . '/' . $newPath;
+
+        // Jika path berubah
+        if ($newPath !== $oldPath) {
+            if (File::exists($newFullPath)) {
+                return back()->withErrors(['Path_Model' => 'Path baru sudah digunakan oleh model lain.']);
+            }
+            if (File::exists($oldFullPath)) {
+                File::move($oldFullPath, $newFullPath);
+            }
+        }
+
+        $targetPath = $newPath === $oldPath ? $oldFullPath : $newFullPath;
+
+        // Upload ulang file jika ada
+        if ($request->hasFile('metadata')) {
+            $request->file('metadata')->move($targetPath, 'metadata.json');
+        }
+        if ($request->hasFile('model_file')) {
+            $request->file('model_file')->move($targetPath, 'model.json');
+        }
+        if ($request->hasFile('weights')) {
+            $request->file('weights')->move($targetPath, 'weights.bin');
+        }
+
+        $model->update([
+            'Name_Model' => $request->Name_Model,
+            'Path_Model' => $newPath,
+        ]);
+
+        return redirect()->route('model')->with('success', 'Model berhasil diperbarui.');
+    }
+
+    public function destroy($Id_Model)
+    {
+        $model = ModelAi::findOrFail($Id_Model);
+        $dir = $this->getBasePath() . '/' . $model->Path_Model;
+
+        if (File::exists($dir)) {
+            File::deleteDirectory($dir);
+        }
+
+        $model->delete();
+        return redirect()->route('model')->with('success', 'Model dan folder berhasil dihapus.');
+    }
+
+    protected function validateFiles(Request $request)
+    {
+        $allowed = ['json', 'bin'];
+
+        foreach (['metadata', 'model_file'] as $field) {
+            if ($request->hasFile($field)) {
+                $ext = strtolower($request->file($field)->getClientOriginalExtension());
+                if ($ext !== 'json') {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        $field => ['File harus berekstensi .json.']
+                    ]);
+                }
+            }
+        }
+
+        if ($request->hasFile('weights')) {
+            $ext = strtolower($request->file('weights')->getClientOriginalExtension());
+            if ($ext !== 'bin') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'weights' => ['File harus berekstensi .bin.']
+                ]);
+            }
+        }
     }
 }

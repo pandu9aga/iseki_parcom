@@ -31,6 +31,10 @@
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record.admin', ['Id_Comparison' => 1]) }}">Record</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'user' ? 'active' : '' }}" href="{{ route('user') }}">User</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'model' ? 'active' : '' }}" href="{{ route('model') }}">Model</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'tractor' ? 'active' : '' }}" href="{{ route('tractor') }}">Tractor</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'part' ? 'active' : '' }}" href="{{ route('part') }}">Part</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'comparison' ? 'active' : '' }}" href="{{ route('comparison') }}">Comparison</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'list_comparison' ? 'active' : '' }}" href="{{ route('list.comparison') }}">List Comparison</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'logout' ? 'active' : '' }}" href="{{ route('logout') }}">Logout</a></li>
                 </ul>
             </div>
