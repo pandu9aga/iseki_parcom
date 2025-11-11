@@ -118,7 +118,7 @@ class RingSynchronizerController extends Controller
                 $q->where('Name_Comparison', 'Ring Synchronizer');
             })
             ->whereHas('tractor', function ($q) use ($tractorType) {
-                $q->where('Type_Tractor', 'LIKE', "%{$tractorType}%");
+                $q->whereRaw("? LIKE CONCAT(Type_Tractor, '%')", [$tractorType]);
             })
             ->first();
 
@@ -127,11 +127,11 @@ class RingSynchronizerController extends Controller
         }
 
         return response()->json([
-            'id_part' => $list->Id_Part,
-            'code_part' => $list->part->Code_Part,
-            'name_part' => $list->part->Name_Part,
-            'id_tractor' => $list->Id_Tractor,
-            'id_comparison' => $list->Id_Comparison,
+            'Id_Part' => $list->Id_Part,
+            'Code_Part' => $list->part->Code_Part,
+            'Name_Part' => $list->part->Name_Part,
+            'Id_Tractor' => $list->Id_Tractor,
+            'Id_Comparison' => $list->Id_Comparison,
         ]);
     }
 
@@ -146,9 +146,9 @@ class RingSynchronizerController extends Controller
         ]);
 
         if ($request->Result_Record === 'NG') {
-            $validator->addRules(['Photo_Ng_Path' => 'required|file|image|max:512']);
+            $validator->addRules(['Photo_Ng_Path' => 'required|file|image']);
         } else {
-            $validator->addRules(['Photo_Ng_Path' => 'nullable|file|image|max:512']);
+            $validator->addRules(['Photo_Ng_Path' => 'nullable|file|image']);
         }
 
         if ($validator->fails()) {
