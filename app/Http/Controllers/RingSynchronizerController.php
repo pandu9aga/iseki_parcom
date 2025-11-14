@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Models\Record;
 
 class RingSynchronizerController extends Controller
 {
@@ -259,5 +260,12 @@ class RingSynchronizerController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function index()
+    {
+        $date = Carbon::today();
+        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
+        return response()->json($records);
     }
 }
