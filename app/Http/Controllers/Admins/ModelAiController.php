@@ -71,7 +71,7 @@ class ModelAiController extends Controller
         }
 
         $oldPath = $model->Path_Model;
-        $newPath = Str::slug($request->Path_Model, '_');
+        $newPath = $request->Path_Model;
 
         $base = $this->getBasePath();
         $oldFullPath = $base . '/' . $oldPath;

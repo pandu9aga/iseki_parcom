@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Record;
 
-class RingSynchronizerController extends Controller
+class BearingKbcController extends Controller
 {
     public function validateRule(Request $request)
     {
@@ -116,7 +116,7 @@ class RingSynchronizerController extends Controller
     {
         $list = \App\Models\ListComparison::with(['part', 'tractor'])
             ->whereHas('comparison', function ($q) {
-                $q->where('Name_Comparison', 'Ring Synchronizer');
+                $q->where('Name_Comparison', 'Bearing KBC');
             })
             ->whereHas('tractor', function ($q) use ($tractorType) {
                 $q->whereRaw("? LIKE CONCAT(Type_Tractor, '%')", [$tractorType]);
@@ -144,13 +144,28 @@ class RingSynchronizerController extends Controller
             'Id_Part' => 'required|integer',
             'No_Tractor_Record' => 'required|string',
             'Result_Record' => 'required|in:OK,NG',
+            'Text_Record' => 'required|string', // Baru
+            'Predict_Record' => 'required|string', // Baru
         ]);
 
+        // Validasi foto
         if ($request->Result_Record === 'NG') {
-            $validator->addRules(['Photo_Ng_Path' => 'required|file|image']);
-        } else {
-            $validator->addRules(['Photo_Ng_Path' => 'nullable|file|image']);
+            // Jika hasil NG di TFLite part, mungkin tidak ada foto OCR
+            // Atau jika NG di OCR, pastikan ada foto part dan ocr
+            // Sesuaikan logika validasi sesuai kebutuhan
+            // Misalnya, jika part = shaft, maka Photo_Ng_Path_Two wajib
+            if ($request->hasFile('Photo_Ng_Path_Two')) {
+                 $validator->addRules(['Photo_Ng_Path_Two' => 'required|file|image|max:512']);
+            }
+             $validator->addRules(['Photo_Ng_Path' => 'required|file|image|max:512']); // Foto part selalu wajib jika proses lanjut
+
+        } else { // Result_Record = OK
+             $validator->addRules([
+                 'Photo_Ng_Path' => 'required|file|image|max:512',
+                 'Photo_Ng_Path_Two' => 'required|file|image|max:512', // Karena OK, pasti ada dua foto
+             ]);
         }
+
 
         if ($validator->fails()) {
             return response()->json([
@@ -160,7 +175,8 @@ class RingSynchronizerController extends Controller
         }
 
         $now = Carbon::now();
-        $photoPath = null;
+        $photoPath1 = null;
+        $photoPath2 = null;
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $request->Id_Comparison)->first();
         if (!$comparison) {
@@ -241,10 +257,13 @@ class RingSynchronizerController extends Controller
 
             // Simpan foto
             if ($request->hasFile('Photo_Ng_Path')) {
-                $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
+                $photoPath1 = $request->file('Photo_Ng_Path')->store('bearing_kbc_photos', 'uploads'); // Ganti folder jika perlu
+            }
+            if ($request->hasFile('Photo_Ng_Path_Two')) {
+                $photoPath2 = $request->file('Photo_Ng_Path_Two')->store('bearing_kbc_photos', 'uploads');
             }
 
-            // Simpan ke records PARCOM
+            // Simpan ke records PARCOM (pastikan struktur tabel mendukung kolom baru)
             DB::table('records')->insert([
                 'Id_Comparison' => $request->Id_Comparison,
                 'Id_Tractor' => $request->Id_Tractor,
@@ -252,7 +271,10 @@ class RingSynchronizerController extends Controller
                 'Time_Record' => $now,
                 'No_Tractor_Record' => $request->No_Tractor_Record,
                 'Result_Record' => $request->Result_Record,
-                'Photo_Ng_Path' => $photoPath,
+                'Photo_Ng_Path' => $photoPath1, // Foto pertama
+                'Photo_Ng_Path_Two' => $photoPath2, // Foto kedua (OCR)
+                'Text_Record' => $request->Text_Record, // Teks dari OCR
+                'Predict_Record' => $request->Predict_Record, // Prediksi dari OCR
             ]);
 
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
@@ -265,7 +287,7 @@ class RingSynchronizerController extends Controller
     public function index()
     {
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 1)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 2)->with('comparison', 'tractor', 'part', 'user')->get();
         return response()->json($records);
     }
 }
