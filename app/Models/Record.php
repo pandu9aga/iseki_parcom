@@ -10,7 +10,20 @@ class Record extends Model
     protected $primaryKey = 'Id_Record';
     public $timestamps = false;
 
-    protected $fillable = ['Id_Comparison', 'Id_Tractor', 'Id_Part', 'No_Tractor_Record', 'Result_Record', 'Time_Record', 'Photo_Ng_Path', 'Id_User'];
+    protected $fillable = [
+        'Id_Comparison',
+        'Id_Tractor',
+        'Id_Part',
+        'No_Tractor_Record',
+        'Production_Date_Record',
+        'Result_Record',
+        'Time_Record',
+        'Photo_Ng_Path',
+        'Photo_Ng_Path_Two',
+        'Text_Record',
+        'Predict_Record',
+        'Id_User'
+    ];
 
     public function comparison()
     {

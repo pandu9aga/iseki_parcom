@@ -98,7 +98,20 @@
                             </td>
                             <td class="align-middle text-center">
                                 @if ($record->Result_Record === 'OK')
-                                    <span class="badge bg-success">
+                                    <span class="badge bg-success view-detail"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#detailModal"
+                                        data-id="{{ $record->Id_Record }}"
+                                        data-no="{{ $record->No_Tractor_Record }}"
+                                        data-type="{{ $record->tractor->Type_Tractor }}"
+                                        data-comp="{{ $record->comparison->Name_Comparison }}"
+                                        data-part="{{ $record->part->Code_Part }}"
+                                        data-result="{{ $record->Result_Record }}"
+                                        data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
+                                        data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/'.$record->Photo_Ng_Path) : asset('storage/no-img.jpeg') }}"
+                                        data-approve="false"
+                                        data-approvedby=""
+                                    >
                                         {{ $record->Result_Record }}
                                     </span>
                                 @elseif ($record->Result_Record === 'NG')
@@ -113,7 +126,8 @@
                                         data-result="{{ $record->Result_Record }}"
                                         data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
                                         data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/'.$record->Photo_Ng_Path) : asset('storage/no-img.jpeg') }}"
-                                        data-approve="true">
+                                        data-approve="true"
+                                    >
                                         {{ $record->Result_Record }}
                                     </span>
                                 @elseif ($record->Result_Record === 'NG-OK')
@@ -129,7 +143,8 @@
                                         data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
                                         data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/'.$record->Photo_Ng_Path) : asset('storage/no-img.jpeg') }}"
                                         data-approvedby="{{ $record->user ? $record->user->Name_User : '-' }}"
-                                        data-approve="false">
+                                        data-approve="false"
+                                    >
                                         {{ $record->Result_Record }}
                                     </span>
                                 @endif
@@ -190,60 +205,67 @@
 <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
 <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
 <script>
-new DataTable('#example');
+    new DataTable('#example');
 
-document.addEventListener('DOMContentLoaded', () => {
-    const detailModal = document.getElementById('detailModal');
-    const modalHeader = detailModal.querySelector('.modal-header');
-    const modalTitle = detailModal.querySelector('.modal-title');
-    const modalResult = document.getElementById('modalResult');
-    const approveForm = document.getElementById('approveForm');
-    const approvedByRow = document.getElementById('approvedByRow');
-    const modalApprovedBy = document.getElementById('modalApprovedBy');
+    document.addEventListener('DOMContentLoaded', () => {
+        const detailModal = document.getElementById('detailModal');
+        const modalHeader = detailModal.querySelector('.modal-header');
+        const modalTitle = detailModal.querySelector('.modal-title');
+        const modalResult = document.getElementById('modalResult');
+        const approveForm = document.getElementById('approveForm');
+        const approvedByRow = document.getElementById('approvedByRow');
+        const modalApprovedBy = document.getElementById('modalApprovedBy');
 
-    detailModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const result = button.getAttribute('data-result');
-        const approvedBy = button.getAttribute('data-approvedby');
+        detailModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const result = button.getAttribute('data-result');
+            const approvedBy = button.getAttribute('data-approvedby');
+            const needsApproval = button.getAttribute('data-approve') === 'true'; // Ambil dari data attribute
 
-        // Isi data tabel
-        document.getElementById('modalRecordId').value = button.getAttribute('data-id');
-        document.getElementById('modalNo').textContent = button.getAttribute('data-no');
-        document.getElementById('modalType').textContent = button.getAttribute('data-type');
-        document.getElementById('modalComp').textContent = button.getAttribute('data-comp');
-        document.getElementById('modalPart').textContent = button.getAttribute('data-part');
-        document.getElementById('modalTime').textContent = button.getAttribute('data-time');
-        document.getElementById('modalPhoto').src = button.getAttribute('data-photo');
+            // Isi data tabel
+            document.getElementById('modalRecordId').value = button.getAttribute('data-id');
+            document.getElementById('modalNo').textContent = button.getAttribute('data-no');
+            document.getElementById('modalType').textContent = button.getAttribute('data-type');
+            document.getElementById('modalComp').textContent = button.getAttribute('data-comp');
+            document.getElementById('modalPart').textContent = button.getAttribute('data-part');
+            document.getElementById('modalTime').textContent = button.getAttribute('data-time');
+            document.getElementById('modalPhoto').src = button.getAttribute('data-photo');
 
-        // Reset header + badge style
-        modalHeader.className = 'modal-header';
-        modalResult.className = 'badge';
+            // Reset header + badge style
+            modalHeader.className = 'modal-header';
+            modalResult.className = 'badge';
 
-        if (result === 'NG') {
-            modalHeader.classList.add('bg-danger', 'text-white');
-            modalResult.classList.add('bg-danger');
-            approveForm.style.display = 'block';
-        } else if (result === 'NG-OK') {
-            modalHeader.classList.add('bg-warning', 'text-white');
-            modalResult.classList.add('bg-warning');
-            approveForm.style.display = 'none';
-        } else { // OK
-            modalHeader.classList.add('bg-success', 'text-white');
-            modalResult.classList.add('bg-success');
-            approveForm.style.display = 'none';
-        }
+            // Set warna header dan badge berdasarkan result
+            if (result === 'OK') {
+                modalHeader.classList.add('bg-success', 'text-white');
+                modalResult.classList.add('bg-success');
+            } else if (result === 'NG') {
+                modalHeader.classList.add('bg-danger', 'text-white');
+                modalResult.classList.add('bg-danger');
+            } else if (result === 'NG-OK') {
+                modalHeader.classList.add('bg-warning', 'text-white');
+                modalResult.classList.add('bg-warning');
+            }
 
-        if (result === 'NG-OK') {
-            approvedByRow.style.display = '';
-            modalApprovedBy.textContent = approvedBy;
-        } else {
-            approvedByRow.style.display = 'none';
-            modalApprovedBy.textContent = '';
-        }
+            // Tampilkan/hide tombol approve berdasarkan data-approve
+            if (needsApproval) {
+                approveForm.style.display = 'block';
+            } else {
+                approveForm.style.display = 'none';
+            }
 
-        modalTitle.textContent = 'Detail Record';
-        modalResult.textContent = result;
+            // Tampilkan/hide baris approved by berdasarkan result
+            if (result === 'NG-OK') {
+                approvedByRow.style.display = '';
+                modalApprovedBy.textContent = approvedBy;
+            } else {
+                approvedByRow.style.display = 'none';
+                modalApprovedBy.textContent = '';
+            }
+
+            modalTitle.textContent = 'Detail Record';
+            modalResult.textContent = result;
+        });
     });
-});
 </script>
 @endsection
