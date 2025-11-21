@@ -28,7 +28,7 @@
                 <ul class="navbar-nav">
                     <li class="nav-item"><span class="nav-link js-scroll-trigger active" href="#">Part Comparator</span></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard.admin') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record.admin', ['Id_Comparison' => 1]) }}">Record</a></li>
+                    {{-- <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record.admin', ['Id_Comparison' => 1]) }}">Record</a></li> --}}
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'user' ? 'active' : '' }}" href="{{ route('user') }}">User</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'model' ? 'active' : '' }}" href="{{ route('model') }}">Model</a></li>
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'tractor' ? 'active' : '' }}" href="{{ route('tractor') }}">Tractor</a></li>
