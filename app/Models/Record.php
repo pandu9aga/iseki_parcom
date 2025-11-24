@@ -44,4 +44,20 @@ class Record extends Model
     {
         return $this->belongsTo(User::class, 'Id_User', 'Id_User');
     }
+
+    public function getPlanAttribute()
+    {
+        // Ambil No_Produksi dari record ini
+        $noProduksi = $this->No_Tractor_Record;
+
+        // Konversi No_Produksi ke format 5 digit
+        $noProduksi5Digit = str_pad($noProduksi, 5, '0', STR_PAD_LEFT);
+
+        // Cari Plan yang sesuai
+        // Gunakan koneksi 'podium' yang telah ditentukan di model Plan
+        $plan = Plan::whereRaw('LPAD(?, 5, "0") = Sequence_No_Plan', [$noProduksi])
+                    ->first(); // Menggunakan $noProduksi, bukan $noProduksi5Digit, karena LPAD akan menanganinya
+
+        return $plan; // Akan mengembalikan objek Plan atau null
+    }
 }

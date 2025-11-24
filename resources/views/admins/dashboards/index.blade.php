@@ -113,7 +113,7 @@
                                     {{ $record->No_Tractor_Record ?? '-' }}
                                 </td>
                                 <td class="align-middle text-center">
-                                    {{ optional($record->tractor)->Type_Tractor ?? '-' }}
+                                    {{ $record->plan->Model_Name_Plan ?? '-' }}
                                 </td>
                                 <td class="align-middle text-center">
                                     {{ optional($record->comparison)->Name_Comparison ?? '-' }}
@@ -134,7 +134,7 @@
                                             data-bs-target="#detailModal"
                                             data-id="{{ $record->Id_Record }}"
                                             data-no="{{ $record->No_Tractor_Record }}"
-                                            data-type="{{ optional($record->tractor)->Type_Tractor ?? '-' }}"
+                                            data-type="{{ $record->plan->Model_Name_Plan ?? '-' }}"
                                             data-comp="{{ optional($record->comparison)->Name_Comparison ?? '-' }}"
                                             data-part="{{ optional($record->part)->Code_Part ?? '-' }}"
                                             data-result="{{ $record->Result_Record }}"
@@ -154,7 +154,7 @@
                                             data-bs-target="#detailModal"
                                             data-id="{{ $record->Id_Record }}"
                                             data-no="{{ $record->No_Tractor_Record }}"
-                                            data-type="{{ optional($record->tractor)->Type_Tractor ?? '-' }}"
+                                            data-type="{{ $record->plan->Model_Name_Plan ?? '-' }}"
                                             data-comp="{{ optional($record->comparison)->Name_Comparison ?? '-' }}"
                                             data-part="{{ optional($record->part)->Code_Part ?? '-' }}"
                                             data-result="{{ $record->Result_Record }}"
@@ -173,7 +173,7 @@
                                             data-bs-target="#detailModal"
                                             data-id="{{ $record->Id_Record }}"
                                             data-no="{{ $record->No_Tractor_Record }}"
-                                            data-type="{{ optional($record->tractor)->Type_Tractor ?? '-' }}"
+                                            data-type="{{ $record->plan->Model_Name_Plan ?? '-' }}"
                                             data-comp="{{ optional($record->comparison)->Name_Comparison ?? '-' }}"
                                             data-part="{{ optional($record->part)->Code_Part ?? '-' }}"
                                             data-result="{{ $record->Result_Record }}"
@@ -194,7 +194,7 @@
                                             data-bs-target="#detailModal"
                                             data-id="{{ $record->Id_Record }}"
                                             data-no="{{ $record->No_Tractor_Record }}"
-                                            data-type="{{ optional($record->tractor)->Type_Tractor ?? '-' }}"
+                                            data-type="{{ $record->plan->Model_Name_Plan ?? '-' }}"
                                             data-comp="{{ optional($record->comparison)->Name_Comparison ?? '-' }}"
                                             data-part="{{ optional($record->part)->Code_Part ?? '-' }}"
                                             data-result="{{ $record->Result_Record }}"
@@ -249,13 +249,27 @@
                     <tr id="predictRecordRow" style="display: none;">
                         <th>Predict Record</th><td id="modalPredictRecord"></td>
                     </tr>
-                    <!-- 🔥 Baris baru: Photo NG Path Two -->
-                    <tr id="photoTwoRow" style="display: none;">
-                        <th>Photo NG Path 2</th>
-                        <td><img id="modalPhotoTwo" src="" alt="Foto NG 2" class="img-fluid rounded shadow" style="max-height: 200px;"></td>
-                    </tr>
                     <tr id="approvedByRow" style="display:none;">
                         <th>Approved By</th><td id="modalApprovedBy"></td>
+                    </tr>
+                    <tr id="photosRow" style="display: none;">
+                        <th>Foto</th>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="flex-fill text-center">
+                                    <small class="text-muted">Foto Part</small><br>
+                                    <a id="modalPhotoLink" href="#" target="_blank">
+                                        <img id="modalPhoto" src="" alt="Foto Part" class="img-fluid rounded shadow" style="max-height: 200px; object-fit: contain; cursor: pointer;">
+                                    </a>
+                                </div>
+                                <div class="flex-fill text-center">
+                                    <small class="text-muted">Foto OCR</small><br>
+                                    <a id="modalPhotoTwoLink" href="#" target="_blank">
+                                        <img id="modalPhotoTwo" src="" alt="Foto OCR" class="img-fluid rounded shadow" style="max-height: 200px; object-fit: contain; cursor: pointer;">
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 </table>
                 <form id="approveForm" action="{{ route('dashboard.admin.approve') }}" method="POST" class="mb-3">
@@ -263,9 +277,6 @@
                     <input type="hidden" name="record_id" id="modalRecordId">
                     <button type="submit" id="approveBtn" class="btn btn-danger">Approve</button>
                 </form>
-                <div class="text-center">
-                    <img id="modalPhoto" src="" alt="Foto NG" class="img-fluid rounded shadow">
-                </div>
             </div>
         </div>
     </div>
@@ -306,15 +317,6 @@ document.getElementById('detailModal').addEventListener('show.bs.modal', functio
     document.getElementById('modalComp').textContent = comp;
     document.getElementById('modalPart').textContent = part;
     document.getElementById('modalTime').textContent = time;
-    // Isi foto utama
-    const modalPhoto = document.getElementById('modalPhoto');
-    if (photo) {
-        modalPhoto.src = photo;
-        modalPhoto.style.display = 'block'; // Pastikan gambar ditampilkan jika ada
-    } else {
-        modalPhoto.src = ''; // Kosongkan src
-        modalPhoto.style.display = 'none'; // Sembunyikan elemen img
-    }
 
     // Reset badge dan header
     const modalResult = document.getElementById('modalResult');
@@ -366,17 +368,46 @@ document.getElementById('detailModal').addEventListener('show.bs.modal', functio
         predictRecordRow.style.display = 'none';
     }
 
-    // Photo NG Path Two
-    const photoTwoRow = document.getElementById('photoTwoRow');
+    // --- 🔥 FOTO PART & OCR BERSEBELAHAN ---
+    const photosRow = document.getElementById('photosRow');
+    const modalPhoto = document.getElementById('modalPhoto');
+    const modalPhotoLink = document.getElementById('modalPhotoLink'); // 🔥 Ambil elemen link
     const modalPhotoTwo = document.getElementById('modalPhotoTwo');
-    if (photoTwo) {
-        modalPhotoTwo.src = photoTwo;
-        modalPhotoTwo.style.display = 'block'; // Tampilkan gambar
-        photoTwoRow.style.display = '';
+    const modalPhotoTwoLink = document.getElementById('modalPhotoTwoLink'); // 🔥 Ambil elemen link
+
+    const hasPhoto1 = !!photo;
+    const hasPhoto2 = !!photoTwo;
+
+    if (hasPhoto1 || hasPhoto2) {
+        photosRow.style.display = '';
+        // Set foto pertama
+        if (hasPhoto1) {
+            modalPhoto.src = photo;
+            modalPhoto.style.display = 'block';
+            modalPhotoLink.href = photo; // 🔥 Set href link ke URL foto
+        } else {
+            modalPhoto.src = '';
+            modalPhoto.style.display = 'none';
+            modalPhotoLink.href = '#'; // 🔥 Kosongkan href jika tidak ada foto
+        }
+        // Set foto kedua
+        if (hasPhoto2) {
+            modalPhotoTwo.src = photoTwo;
+            modalPhotoTwo.style.display = 'block';
+            modalPhotoTwoLink.href = photoTwo; // 🔥 Set href link ke URL foto
+        } else {
+            modalPhotoTwo.src = '';
+            modalPhotoTwo.style.display = 'none';
+            modalPhotoTwoLink.href = '#'; // 🔥 Kosongkan href jika tidak ada foto
+        }
     } else {
-        modalPhotoTwo.src = ''; // Kosongkan src
-        modalPhotoTwo.style.display = 'none'; // Sembunyikan elemen img
-        photoTwoRow.style.display = 'none'; // Sembunyikan baris tabelnya
+        photosRow.style.display = 'none';
+        modalPhoto.src = '';
+        modalPhoto.style.display = 'none';
+        modalPhotoLink.href = '#';
+        modalPhotoTwo.src = '';
+        modalPhotoTwo.style.display = 'none';
+        modalPhotoTwoLink.href = '#';
     }
 
     // Approved By (hanya muncul jika NG-OK dan approvedBy ada)
