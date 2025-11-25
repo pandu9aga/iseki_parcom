@@ -23,7 +23,7 @@ class MainController extends Controller
         $page = 'dashboard';
 
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 1)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 
@@ -84,7 +84,7 @@ class MainController extends Controller
         $page = 'dashboard';
 
         $date = $request->input('Day_Record');
-        $records = Record::whereDate('Time_Record', $date)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 1)->with('comparison', 'tractor', 'part', 'user')->get();
 
         $date = Carbon::parse($date)->isoFormat('YYYY-MM-DD');
 

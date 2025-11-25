@@ -140,8 +140,8 @@ class BearingKbcController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'Id_Comparison' => 'required|integer',
-            'Id_Tractor' => 'required|integer',
-            'Id_Part' => 'required|integer',
+            // 'Id_Tractor' => 'required|integer',
+            // 'Id_Part' => 'required|integer',
             'No_Tractor_Record' => 'required|string',
             'Result_Record' => 'required|in:OK,NG',
             'Text_Record' => 'required|string', // Baru
@@ -266,8 +266,8 @@ class BearingKbcController extends Controller
             // Simpan ke records PARCOM (pastikan struktur tabel mendukung kolom baru)
             DB::table('records')->insert([
                 'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
+                // 'Id_Tractor' => $request->Id_Tractor,
+                // 'Id_Part' => $request->Id_Part,
                 'Time_Record' => $now,
                 'No_Tractor_Record' => $request->No_Tractor_Record,
                 'Result_Record' => $request->Result_Record,

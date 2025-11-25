@@ -28,27 +28,37 @@ class ModelAiController extends Controller
     {
         $request->validate([
             'Name_Model' => 'required|string|max:255',
-            'Path_Model' => 'required|string|max:255|unique:models,Path_Model',
+            'Path_Model' => 'required|string|max:255|unique:models,Path_Model', // Validasi path unik di database
         ]);
 
-        // Validasi manual ekstensi file
+        // Validasi file
         $this->validateFiles($request);
 
-        $pathName = $request->Path_Model;
+        // 🔥 Ekstrak nama folder dari path input
+        $inputPath = $request->Path_Model;
+        $folderName = basename($inputPath); // Ambil nama terakhir dari path: bearing_kbc
 
-        // Buat folder jika belum ada
-        if (!File::exists($pathName)) {
-            File::makeDirectory($pathName, 0755, true);
+        // Pastikan folderName hanya berisi karakter yang valid
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $folderName)) {
+            return back()->withErrors(['Path_Model' => 'Nama folder hanya boleh berisi huruf, angka, underscore, dan tanda hubung.']);
         }
 
-        // Simpan file
-        $request->file('metadata')->move($pathName, 'metadata.json');
-        $request->file('model_file')->move($pathName, 'model.json');
-        $request->file('weights')->move($pathName, 'weights.bin');
+        $fullPath = $this->getBasePath() . DIRECTORY_SEPARATOR . $folderName;
 
+        // Buat folder jika belum ada
+        if (!File::exists($fullPath)) {
+            File::makeDirectory($fullPath, 0755, true);
+        }
+
+        // Simpan file ke folder yang benar
+        $request->file('metadata')->move($fullPath, 'metadata.json');
+        $request->file('model_file')->move($fullPath, 'model.json');
+        $request->file('weights')->move($fullPath, 'weights.bin');
+
+        // 🔥 Simpan path input asli ke database (../storage/model/bearing_kbc)
         ModelAi::create([
             'Name_Model' => $request->Name_Model,
-            'Path_Model' => $pathName,
+            'Path_Model' => $request->Path_Model, // Simpan path lengkap seperti yang diinput user
         ]);
 
         return redirect()->route('model')->with('success', 'Model berhasil ditambahkan.');
@@ -57,9 +67,10 @@ class ModelAiController extends Controller
     public function update(Request $request, $Id_Model)
     {
         $model = ModelAi::findOrFail($Id_Model);
+
         $request->validate([
             'Name_Model' => 'required|string|max:255',
-            'Path_Model' => "required|string|max:255|unique:models,Path_Model,{$Id_Model},Id_Model",
+            'Path_Model' => "required|string|max:255|unique:models,Path_Model,{$Id_Model},Id_Model", // Abaikan model saat ini saat cek unique
         ]);
 
         if (
@@ -70,24 +81,38 @@ class ModelAiController extends Controller
             $this->validateFiles($request);
         }
 
+        // 🔥 Ekstrak nama folder dari path input baru
+        $inputPath = $request->Path_Model;
+        $newFolderName = basename($inputPath);
+
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $newFolderName)) {
+            return back()->withErrors(['Path_Model' => 'Nama folder hanya boleh berisi huruf, angka, underscore, dan tanda hubung.']);
+        }
+
         $oldPath = $model->Path_Model;
-        $newPath = $request->Path_Model;
+        $oldFolderName = basename($oldPath);
 
-        $base = $this->getBasePath();
-        $oldFullPath = $base . '/' . $oldPath;
-        $newFullPath = $base . '/' . $newPath;
+        $basePath = $this->getBasePath();
+        $oldFullPath = $basePath . DIRECTORY_SEPARATOR . $oldFolderName;
+        $newFullPath = $basePath . DIRECTORY_SEPARATOR . $newFolderName;
 
-        // Jika path berubah
-        if ($newPath !== $oldPath) {
+        // Jika path folder berubah
+        if ($newFolderName !== $oldFolderName) {
+            // Periksa apakah folder baru sudah ada dan digunakan model lain
             if (File::exists($newFullPath)) {
-                return back()->withErrors(['Path_Model' => 'Path baru sudah digunakan oleh model lain.']);
+                $existingModel = ModelAi::where('Path_Model', 'like', "%{$newFolderName}")->first();
+                if ($existingModel && $existingModel->Id_Model !== $Id_Model) {
+                    return back()->withErrors(['Path_Model' => 'Path baru sudah digunakan oleh model lain.']);
+                }
             }
+
+            // Pindahkan folder jika lama ada
             if (File::exists($oldFullPath)) {
                 File::move($oldFullPath, $newFullPath);
             }
         }
 
-        $targetPath = $newPath === $oldPath ? $oldFullPath : $newFullPath;
+        $targetPath = $newFolderName === $oldFolderName ? $oldFullPath : $newFullPath;
 
         // Upload ulang file jika ada
         if ($request->hasFile('metadata')) {
@@ -100,9 +125,10 @@ class ModelAiController extends Controller
             $request->file('weights')->move($targetPath, 'weights.bin');
         }
 
+        // 🔥 Simpan path input asli ke database (../storage/model/bearing_kbc)
         $model->update([
             'Name_Model' => $request->Name_Model,
-            'Path_Model' => $newPath,
+            'Path_Model' => $request->Path_Model, // Simpan path lengkap seperti yang diinput user
         ]);
 
         return redirect()->route('model')->with('success', 'Model berhasil diperbarui.');
@@ -111,13 +137,39 @@ class ModelAiController extends Controller
     public function destroy($Id_Model)
     {
         $model = ModelAi::findOrFail($Id_Model);
-        $dir = $this->getBasePath() . '/' . $model->Path_Model;
 
-        if (File::exists($dir)) {
-            File::deleteDirectory($dir);
+        // 🔥 Ekstrak nama folder dari Path_Model
+        $storedPath = $model->Path_Model; // Misalnya: "../storage/model/testing"
+        $folderName = basename($storedPath); // Ambil bagian terakhir: "testing"
+
+        // Pastikan nama folder hanya berisi karakter yang aman
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $folderName)) {
+            // \Log::warning("Invalid folder name in Path_Model: $storedPath");
+            return redirect()->back()->withErrors(['error' => 'Nama folder tidak valid.']);
         }
 
+        // 🔥 Bangun path absolut ke folder yang sebenarnya
+        $actualPath = public_path('storage/model') . DIRECTORY_SEPARATOR . $folderName;
+
+        // \Log::info("Destroying model: {$model->Name_Model}, attempting to delete directory: $actualPath");
+
+        if (File::exists($actualPath)) {
+            try {
+                File::deleteDirectory($actualPath);
+                // \Log::info("Successfully deleted directory: $actualPath");
+            } catch (\Exception $e) {
+                // \Log::error("Failed to delete directory: $actualPath, Error: " . $e->getMessage());
+                return redirect()->back()->withErrors(['error' => 'Gagal menghapus folder: ' . $e->getMessage()]);
+            }
+        } else {
+            // \Log::warning("Directory does not exist, skipping deletion: $actualPath");
+            // Opsional: Beri peringatan bahwa folder fisik tidak ditemukan, tapi tetap hapus dari DB
+            // return redirect()->back()->withErrors(['error' => 'Folder fisik tidak ditemukan: ' . $actualPath]);
+        }
+
+        // Hapus data dari database
         $model->delete();
+
         return redirect()->route('model')->with('success', 'Model dan folder berhasil dihapus.');
     }
 
