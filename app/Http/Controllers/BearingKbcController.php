@@ -155,14 +155,14 @@ class BearingKbcController extends Controller
             // Sesuaikan logika validasi sesuai kebutuhan
             // Misalnya, jika part = shaft, maka Photo_Ng_Path_Two wajib
             if ($request->hasFile('Photo_Ng_Path_Two')) {
-                 $validator->addRules(['Photo_Ng_Path_Two' => 'required|file|image|max:512']);
+                 $validator->addRules(['Photo_Ng_Path_Two' => 'required|file|image']);
             }
-             $validator->addRules(['Photo_Ng_Path' => 'required|file|image|max:512']); // Foto part selalu wajib jika proses lanjut
+             $validator->addRules(['Photo_Ng_Path' => 'required|file|image']); // Foto part selalu wajib jika proses lanjut
 
         } else { // Result_Record = OK
              $validator->addRules([
-                 'Photo_Ng_Path' => 'required|file|image|max:512',
-                 'Photo_Ng_Path_Two' => 'required|file|image|max:512', // Karena OK, pasti ada dua foto
+                 'Photo_Ng_Path' => 'required|file|image',
+                 'Photo_Ng_Path_Two' => 'required|file|image', // Karena OK, pasti ada dua foto
              ]);
         }
 

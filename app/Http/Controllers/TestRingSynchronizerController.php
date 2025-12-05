@@ -14,11 +14,15 @@ class TestRingSynchronizerController extends Controller
     {
         $request->validate([
             'sequence_no' => 'required|string',
-            'id_comparison' => 'required|integer'
+            'id_comparison' => 'required|integer',
+            // 🔥 Tambahkan validasi production_date
+            'production_date' => 'required|integer', // Sesuaikan format jika berbeda
         ]);
 
         $sequenceNo = $request->input('sequence_no');
         $idComparison = $request->input('id_comparison');
+        // 🔥 Ambil production date dari request
+        $productionDate = $request->input('production_date');
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $idComparison)->first();
         if (!$comparison) {
@@ -33,11 +37,16 @@ class TestRingSynchronizerController extends Controller
         $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         try {
-            $plan = DB::connection('testpodium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            // 🔥 Tambahkan kondisi untuk production date di query plan
+            $plan = DB::connection('testpodium')->table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->first();
+
             if (!$plan) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan di sistem PODIUM."
+                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' dan Production_Date_Plan '{$productionDate}' tidak ditemukan di sistem PODIUM."
                 ], 404);
             }
 
@@ -144,6 +153,8 @@ class TestRingSynchronizerController extends Controller
             'Id_Part' => 'required|integer',
             'No_Tractor_Record' => 'required|string',
             'Result_Record' => 'required|in:OK,NG',
+            // 🔥 Tambahkan validasi production_date
+            'Production_Date_Record' => 'required|string', // Sesuaikan format jika berbeda
         ]);
 
         if ($request->Result_Record === 'NG') {
@@ -170,11 +181,18 @@ class TestRingSynchronizerController extends Controller
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
         $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+        // 🔥 Ambil production date dari request
+        $productionDate = $request->input('Production_Date_Record');
 
         try {
-            $plan = DB::connection('testpodium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            // 🔥 Tambahkan kondisi untuk production date di query plan
+            $plan = DB::connection('testpodium')->table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->first();
+
             if (!$plan) {
-                return response()->json(['success' => false, 'message' => "Plan tidak ditemukan di PODIUM"], 404);
+                return response()->json(['success' => false, 'message' => "Plan tidak ditemukan di PODIUM untuk Sequence dan Production Date yang diberikan"], 404);
             }
 
             $modelName = $plan->Model_Name_Plan;
@@ -244,7 +262,7 @@ class TestRingSynchronizerController extends Controller
                 $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
             }
 
-            // Simpan ke records PARCOM
+            // 🔥 Simpan ke records PARCOM, termasuk production date
             DB::table('records')->insert([
                 'Id_Comparison' => $request->Id_Comparison,
                 'Id_Tractor' => $request->Id_Tractor,
@@ -253,6 +271,8 @@ class TestRingSynchronizerController extends Controller
                 'No_Tractor_Record' => $request->No_Tractor_Record,
                 'Result_Record' => $request->Result_Record,
                 'Photo_Ng_Path' => $photoPath,
+                // 🔥 Tambahkan production date ke record PARCOM
+                'Production_Date_Record' => $productionDate,
             ]);
 
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
