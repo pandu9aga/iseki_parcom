@@ -14,11 +14,15 @@ class BearingKbcController extends Controller
     {
         $request->validate([
             'sequence_no' => 'required|string',
-            'id_comparison' => 'required|integer'
+            'id_comparison' => 'required|integer',
+            // 🔥 Tambahkan validasi production_date
+            'production_date' => 'required|integer', // Sesuaikan format jika berbeda
         ]);
 
         $sequenceNo = $request->input('sequence_no');
         $idComparison = $request->input('id_comparison');
+        // 🔥 Ambil production date dari request
+        $productionDate = $request->input('production_date');
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $idComparison)->first();
         if (!$comparison) {
@@ -33,11 +37,16 @@ class BearingKbcController extends Controller
         $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         try {
-            $plan = DB::connection('podium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            // 🔥 Tambahkan kondisi untuk production date di query plan
+            $plan = DB::connection('podium')->table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->first();
+
             if (!$plan) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan di sistem PODIUM."
+                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' dan Production_Date_Plan '{$productionDate}' tidak ditemukan di sistem PODIUM."
                 ], 404);
             }
 
@@ -144,28 +153,24 @@ class BearingKbcController extends Controller
             // 'Id_Part' => 'required|integer',
             'No_Tractor_Record' => 'required|string',
             'Result_Record' => 'required|in:OK,NG',
-            'Text_Record' => 'required|string', // Baru
-            'Predict_Record' => 'required|string', // Baru
+            'Text_Record' => 'required|string',
+            'Predict_Record' => 'required|string',
+            // 🔥 Tambahkan validasi production_date
+            'Production_Date_Record' => 'required|integer', // Sesuaikan format jika berbeda
         ]);
 
         // Validasi foto
         if ($request->Result_Record === 'NG') {
-            // Jika hasil NG di TFLite part, mungkin tidak ada foto OCR
-            // Atau jika NG di OCR, pastikan ada foto part dan ocr
-            // Sesuaikan logika validasi sesuai kebutuhan
-            // Misalnya, jika part = shaft, maka Photo_Ng_Path_Two wajib
             if ($request->hasFile('Photo_Ng_Path_Two')) {
                  $validator->addRules(['Photo_Ng_Path_Two' => 'required|file|image']);
             }
-             $validator->addRules(['Photo_Ng_Path' => 'required|file|image']); // Foto part selalu wajib jika proses lanjut
-
-        } else { // Result_Record = OK
+             $validator->addRules(['Photo_Ng_Path' => 'required|file|image']);
+        } else {
              $validator->addRules([
                  'Photo_Ng_Path' => 'required|file|image',
-                 'Photo_Ng_Path_Two' => 'required|file|image', // Karena OK, pasti ada dua foto
+                 'Photo_Ng_Path_Two' => 'required|file|image',
              ]);
         }
-
 
         if ($validator->fails()) {
             return response()->json([
@@ -186,11 +191,18 @@ class BearingKbcController extends Controller
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
         $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+        // 🔥 Ambil production date dari request
+        $productionDate = $request->input('Production_Date_Record');
 
         try {
-            $plan = DB::connection('podium')->table('plans')->where('Sequence_No_Plan', $sequenceNoFormatted)->first();
+            // 🔥 Tambahkan kondisi untuk production date di query plan
+            $plan = DB::connection('podium')->table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->first();
+
             if (!$plan) {
-                return response()->json(['success' => false, 'message' => "Plan tidak ditemukan di PODIUM"], 404);
+                return response()->json(['success' => false, 'message' => "Plan tidak ditemukan di PODIUM untuk Sequence dan Production Date yang diberikan"], 404);
             }
 
             $modelName = $plan->Model_Name_Plan;
@@ -257,13 +269,13 @@ class BearingKbcController extends Controller
 
             // Simpan foto
             if ($request->hasFile('Photo_Ng_Path')) {
-                $photoPath1 = $request->file('Photo_Ng_Path')->store('bearing_kbc_photos', 'uploads'); // Ganti folder jika perlu
+                $photoPath1 = $request->file('Photo_Ng_Path')->store('bearing_kbc_photos', 'uploads');
             }
             if ($request->hasFile('Photo_Ng_Path_Two')) {
                 $photoPath2 = $request->file('Photo_Ng_Path_Two')->store('bearing_kbc_photos', 'uploads');
             }
 
-            // Simpan ke records PARCOM (pastikan struktur tabel mendukung kolom baru)
+            // 🔥 Simpan ke records PARCOM, termasuk production date
             DB::table('records')->insert([
                 'Id_Comparison' => $request->Id_Comparison,
                 // 'Id_Tractor' => $request->Id_Tractor,
@@ -271,10 +283,12 @@ class BearingKbcController extends Controller
                 'Time_Record' => $now,
                 'No_Tractor_Record' => $request->No_Tractor_Record,
                 'Result_Record' => $request->Result_Record,
-                'Photo_Ng_Path' => $photoPath1, // Foto pertama
-                'Photo_Ng_Path_Two' => $photoPath2, // Foto kedua (OCR)
-                'Text_Record' => $request->Text_Record, // Teks dari OCR
-                'Predict_Record' => $request->Predict_Record, // Prediksi dari OCR
+                'Photo_Ng_Path' => $photoPath1,
+                'Photo_Ng_Path_Two' => $photoPath2,
+                'Text_Record' => $request->Text_Record,
+                'Predict_Record' => $request->Predict_Record,
+                // 🔥 Tambahkan production date ke record PARCOM
+                'Production_Date_Record' => $productionDate,
             ]);
 
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
