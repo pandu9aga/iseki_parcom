@@ -12,8 +12,8 @@ use App\Http\Controllers\Admins\PartController;
 use App\Http\Controllers\Admins\ComparisonController;
 use App\Http\Controllers\Admins\ListComparisonController;
 
-Route::get('/', [MainController::class, 'index'])->name('/');
-Route::get('/dashboard', [MainController::class, 'index'])->name('dashboard');
+Route::get('/', [MainController::class, 'signin'])->name('/');
+Route::get('/dashboard', [MainController::class, 'signin'])->name('dashboard');
 Route::get('/dashboard/submit', [MainController::class, 'submit'])->name('dashboard.submit');
 Route::get('/dashboard/export', [MainController::class, 'export'])->name('dashboard.export');
 Route::get('/dashboard/reset', [MainController::class, 'reset'])->name('dashboard.reset');

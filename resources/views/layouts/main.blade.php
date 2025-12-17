@@ -27,8 +27,8 @@
             <div class="collapse navbar-collapse" id="navbarResponsive">
                 <ul class="navbar-nav">
                     <li class="nav-item"><span class="nav-link js-scroll-trigger active" href="#">Part Comparator</span></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record', ['Id_Comparison' => 1]) }}">Record</a></li>
+                    {{-- <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'dashboard' ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'record' ? 'active' : '' }}" href="{{ route('record', ['Id_Comparison' => 1]) }}">Record</a></li> --}}
                     <li class="nav-item"><a class="nav-link js-scroll-trigger {{ $page === 'login' ? 'active' : '' }}" href="{{ route('login') }}">Login</a></li>
                 </ul>
             </div>
