@@ -24,17 +24,17 @@ Route::get('/bearing-koyo/part-by-tractor/{tractorType}', [BearingKoyoController
 Route::post('/bearing-koyo/save', [BearingKoyoController::class, 'insert']);
 Route::get('/bearing-koyo/index', [BearingKoyoController::class, 'index']);
 
-// Route::post('/ring-synchronizer/validate', [TestRingSynchronizerController::class, 'validateRule']);
-// Route::get('/ring-synchronizer/part-by-tractor/{tractorType}', [TestRingSynchronizerController::class, 'getPartByTractorType']);
-// Route::post('/ring-synchronizer/save', [TestRingSynchronizerController::class, 'insert']);
-// Route::get('/ring-synchronizer/index', [TestRingSynchronizerController::class, 'index']);
+Route::post('/testing/ring-synchronizer/validate', [TestRingSynchronizerController::class, 'validateRule']);
+Route::get('/testing/ring-synchronizer/part-by-tractor/{tractorType}', [TestRingSynchronizerController::class, 'getPartByTractorType']);
+Route::post('/testing/ring-synchronizer/save', [TestRingSynchronizerController::class, 'insert']);
+Route::get('/testing/ring-synchronizer/index', [TestRingSynchronizerController::class, 'index']);
 
-// Route::post('/bearing-kbc/validate', [TestBearingKbcController::class, 'validateRule']);
-// Route::get('/bearing-kbc/part-by-tractor/{tractorType}', [TestBearingKbcController::class, 'getPartByTractorType']);
-// Route::post('/bearing-kbc/save', [TestBearingKbcController::class, 'insert']);
-// Route::get('/bearing-kbc/index', [TestBearingKbcController::class, 'index']);
+Route::post('/testing/bearing-kbc/validate', [TestBearingKbcController::class, 'validateRule']);
+Route::get('/testing/bearing-kbc/part-by-tractor/{tractorType}', [TestBearingKbcController::class, 'getPartByTractorType']);
+Route::post('/testing/bearing-kbc/save', [TestBearingKbcController::class, 'insert']);
+Route::get('/testing/bearing-kbc/index', [TestBearingKbcController::class, 'index']);
 
-// Route::post('/bearing-koyo/validate', [TestBearingKoyoController::class, 'validateRule']);
-// Route::get('/bearing-koyo/part-by-tractor/{tractorType}', [TestBearingKoyoController::class, 'getPartByTractorType']);
-// Route::post('/bearing-koyo/save', [TestBearingKoyoController::class, 'insert']);
-// Route::get('/bearing-koyo/index', [TestBearingKoyoController::class, 'index']);
+Route::post('/testing/bearing-koyo/validate', [TestBearingKoyoController::class, 'validateRule']);
+Route::get('/testing/bearing-koyo/part-by-tractor/{tractorType}', [TestBearingKoyoController::class, 'getPartByTractorType']);
+Route::post('/testing/bearing-koyo/save', [TestBearingKoyoController::class, 'insert']);
+Route::get('/testing/bearing-koyo/index', [TestBearingKoyoController::class, 'index']);
