@@ -4,8 +4,8 @@
     <section class="resume-section">
         <div class="resume-section-content">
             <h3 class="mb-3">
-                Part
-                <span class="text-primary">Comparator</span>
+                Detective
+                <span class="text-primary">AI</span>
             </h3>
             <div class="subheading mb-5">
                 Login
