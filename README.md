@@ -1,61 +1,88 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Iseki Parcom - AI-Assisted Part Comparison & Validation System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Overview
 
-## About Laravel
+**Iseki Parcom** is a specialized quality control and validation system designed for industrial part comparison. It leverages AI models to assist in the identification and validation of tractor parts against defined standards. The system integrates production planning validation with real-time record keeping to ensure accuracy in the assembly or inspection process.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The application serves both field operators (scanning/recording) and administrators (managing master data and validation rules).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Key Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Part Comparison & Recording
+*   **Comparison Interface**: Streamlined view for operators to compare physical parts against digital records or AI-detected results.
+*   **Rule Validation**: System-level validation of part sequences and rules against the **Podium** production planning system.
+*   **Real-time Recording**: Capture and submit comparison results with immediate audit log creation.
+*   **Data Export**: Capability to export comparison records to Excel for audit and review.
 
-## Learning Laravel
+### 2. Admin Management Module
+*   **AI Model Management**: Configure and manage AI detection models used in the comparison process.
+*   **Tractor & Part Master Data**: Complete CRUD operations for tractor models and individual parts.
+*   **Validation Rule Management**: Define complex rules for how parts should be compared and validated.
+*   **Admin Dashboard**: High-level overview of system performance with capabilities for manual record approval and data resets.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 3. User & Access Control
+*   **Role-Based Access**: Dedicated workflows for operators and administrators.
+*   **Secure Authentication**: Integrated sign-in and session management.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Technology Stack
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Backend
+*   **Framework**: [Laravel 12.x](https://laravel.com)
+*   **Language**: PHP ^8.2
+*   **Database**: SQLite (Local) / MySQL (Production/System)
+*   **Excel Utilities**: `phpoffice/phpspreadsheet` ^5.0
 
-## Laravel Sponsors
+### Frontend
+*   **Build Tool**: [Vite](https://vitejs.dev)
+*   **Styling**: [Tailwind CSS v4.0](https://tailwindcss.com)
+*   **HTTP Client**: Axios
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Installation & Setup
 
-### Premium Partners
+1.  **Clone the Repository**
+    ```bash
+    git clone <repository-url>
+    cd iseki_parcom
+    ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+2.  **Install PHP Dependencies**
+    ```bash
+    composer install
+    ```
 
-## Contributing
+3.  **Install Node Dependencies**
+    ```bash
+    npm install
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+4.  **Environment Configuration**
+    *   Copy the example environment file:
+        ```bash
+        cp .env.example .env
+        ```
+    *   Configure database and app keys in `.env`.
 
-## Code of Conduct
+5.  **Initialize Application**
+    ```bash
+    php artisan key:generate
+    php artisan migrate
+    ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+6.  **Build Frontend Assets**
+    ```bash
+    npm run build
+    ```
 
-## Security Vulnerabilities
+7.  **Run Development Server**
+    ```bash
+    php artisan serve
+    ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Usage
+
+1.  **Operator**: Log in to the dashboard to begin scanning and comparing parts.
+2.  **Administrator**: Use the `/dashboard_admin` route to manage models, tractors, and view all system records.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is proprietary.
