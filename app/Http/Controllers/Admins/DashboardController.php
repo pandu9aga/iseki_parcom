@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $page = 'dashboard';
 
         // Ambil daftar Comparison untuk dropdown
-        $availableComparisons = Comparison::whereIn('Id_Comparison', [1, 2, 3])->get();
+        $availableComparisons = Comparison::whereIn('Id_Comparison', [1, 2, 3, 4])->get();
 
         // Ambil Id_Comparison dari query string, default ke 1
         $selectedComparisonId = $request->query('comparison', 1);
@@ -52,7 +52,7 @@ class DashboardController extends Controller
         $selectedComparisonId = $request->input('Id_Comparison', 1); // Ambil dari input hidden atau default ke 1
 
         // Ambil daftar Comparison untuk dropdown
-        $availableComparisons = Comparison::whereIn('Id_Comparison', [1, 2, 3])->get();
+        $availableComparisons = Comparison::whereIn('Id_Comparison', [1, 2, 3, 4])->get();
 
         $records = Record::whereDate('Time_Record', $date)
             ->where('Id_Comparison', $selectedComparisonId) // Filter berdasarkan Id_Comparison

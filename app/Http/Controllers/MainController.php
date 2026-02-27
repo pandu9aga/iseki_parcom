@@ -169,8 +169,15 @@ class MainController extends Controller
 
         $comparison = Comparison::where('Id_Comparison', $Id_Comparison)->with('model')->first();
         $list_comparisons = ListComparison::where('Id_Comparison', $Id_Comparison)->with('comparison', 'tractor', 'part')->get();
+
+        // Joint Universal uses a different view with custom logic
+        if ($Id_Comparison == 4) {
+            return view('records.joint_universal', compact('page', 'comparison', 'list_comparisons'));
+        }
+
         return view('records.index', compact('page', 'comparison', 'list_comparisons'));
     }
+
 
     public function insert(Request $request)
     {
