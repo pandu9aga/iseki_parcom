@@ -9,6 +9,7 @@ use App\Http\Controllers\JointUniversalController;
 use App\Http\Controllers\TestRingSynchronizerController;
 use App\Http\Controllers\TestBearingKbcController;
 use App\Http\Controllers\TestBearingKoyoController;
+use App\Http\Controllers\TestJointUniversalController;
 
 Route::post('/ring-synchronizer/validate', [RingSynchronizerController::class, 'validateRule']);
 Route::get('/ring-synchronizer/part-by-tractor/{tractorType}', [RingSynchronizerController::class, 'getPartByTractorType']);
@@ -43,3 +44,7 @@ Route::post('/testing/bearing-koyo/validate', [TestBearingKoyoController::class,
 Route::get('/testing/bearing-koyo/part-by-tractor/{tractorType}', [TestBearingKoyoController::class, 'getPartByTractorType']);
 Route::post('/testing/bearing-koyo/save', [TestBearingKoyoController::class, 'insert']);
 Route::get('/testing/bearing-koyo/index', [TestBearingKoyoController::class, 'index']);
+
+Route::post('/testing/joint-universal/validate', [TestJointUniversalController::class, 'validateRule']);
+Route::post('/testing/joint-universal/save', [TestJointUniversalController::class, 'insert']);
+Route::get('/testing/joint-universal/index', [TestJointUniversalController::class, 'index']);

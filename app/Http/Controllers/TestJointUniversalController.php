@@ -10,18 +10,37 @@ use App\Models\Record;
 
 class TestJointUniversalController extends Controller
 {
+    /**
+     * Tentukan Text_Record berdasarkan Model_Name_Plan
+     * SXG3 -> SXG3
+     * SCMA71 / SCMA60 -> SF PENDEK
+     * SCMA54 / SCMB60 -> SF PANJANG
+     */
+    private function determineTextRecord($modelName)
+    {
+        $modelNameUpper = strtoupper($modelName);
+
+        if (strpos($modelNameUpper, 'SXG3') !== false) {
+            return 'SXG3';
+        } elseif (strpos($modelNameUpper, 'SCMA71') !== false || strpos($modelNameUpper, 'SCMA60') !== false) {
+            return 'SF PENDEK';
+        } elseif (strpos($modelNameUpper, 'SCMA54') !== false || strpos($modelNameUpper, 'SCMB60') !== false) {
+            return 'SF PANJANG';
+        }
+
+        return null;
+    }
+
     public function validateRule(Request $request)
     {
         $request->validate([
             'sequence_no' => 'required|string',
             'id_comparison' => 'required|integer',
-            // 🔥 Tambahkan validasi production_date
-            'production_date' => 'required|integer', // Sesuaikan format jika berbeda
+            'production_date' => 'required|integer',
         ]);
 
         $sequenceNo = $request->input('sequence_no');
         $idComparison = $request->input('id_comparison');
-        // 🔥 Ambil production date dari request
         $productionDate = $request->input('production_date');
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $idComparison)->first();
@@ -37,10 +56,9 @@ class TestJointUniversalController extends Controller
         $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         try {
-            // 🔥 Tambahkan kondisi untuk production date di query plan
             $plan = DB::connection('testpodium')->table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
-                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->where('Production_Date_Plan', $productionDate)
                 ->first();
 
             if (!$plan) {
@@ -51,6 +69,10 @@ class TestJointUniversalController extends Controller
             }
 
             $modelName = $plan->Model_Name_Plan;
+
+            // Tentukan Text_Record berdasarkan Model_Name_Plan
+            $textRecord = $this->determineTextRecord($modelName);
+
             $rule = DB::connection('testpodium')->table('rules')->where('Type_Rule', $modelName)->first();
             if (!$rule) {
                 return response()->json([
@@ -110,7 +132,9 @@ class TestJointUniversalController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Semua proses sebelumnya sudah selesai. Siap melanjutkan."
+                'message' => "Semua proses sebelumnya sudah selesai. Siap melanjutkan.",
+                'model_name' => $modelName,
+                'text_record' => $textRecord,
             ]);
 
         } catch (\Exception $e) {
@@ -121,47 +145,19 @@ class TestJointUniversalController extends Controller
         }
     }
 
-    public function getPartByTractorType($tractorType)
-    {
-        $list = \App\Models\ListComparison::with(['part', 'tractor'])
-            ->whereHas('comparison', function ($q) {
-                $q->where('Name_Comparison', 'Joint Universal');
-            })
-            ->whereHas('tractor', function ($q) use ($tractorType) {
-                $q->whereRaw("? LIKE CONCAT(Type_Tractor, '%')", [$tractorType]);
-            })
-            ->first();
-
-        if (!$list) {
-            return response()->json(null);
-        }
-
-        return response()->json([
-            'Id_Part' => $list->Id_Part,
-            'Code_Part' => $list->part->Code_Part,
-            'Name_Part' => $list->part->Name_Part,
-            'Id_Tractor' => $list->Id_Tractor,
-            'Id_Comparison' => $list->Id_Comparison,
-        ]);
-    }
-
     public function insert(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'Id_Comparison' => 'required|integer',
-            'Id_Tractor' => 'required|integer',
-            'Id_Part' => 'required|integer',
             'No_Tractor_Record' => 'required|string',
             'Result_Record' => 'required|in:OK,NG',
-            // 🔥 Tambahkan validasi production_date
-            'Production_Date_Record' => 'required|string', // Sesuaikan format jika berbeda
+            'Text_Record' => 'required|string',
+            'Predict_Record' => 'required|string',
+            'Production_Date_Record' => 'required|integer',
         ]);
 
-        if ($request->Result_Record === 'NG') {
-            $validator->addRules(['Photo_Ng_Path' => 'required|file|image']);
-        } else {
-            $validator->addRules(['Photo_Ng_Path' => 'nullable|file|image']);
-        }
+        // Foto part selalu wajib
+        $validator->addRules(['Photo_Ng_Path' => 'required|file|image']);
 
         if ($validator->fails()) {
             return response()->json([
@@ -181,14 +177,12 @@ class TestJointUniversalController extends Controller
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
         $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
-        // 🔥 Ambil production date dari request
         $productionDate = $request->input('Production_Date_Record');
 
         try {
-            // 🔥 Tambahkan kondisi untuk production date di query plan
             $plan = DB::connection('testpodium')->table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
-                ->where('Production_Date_Plan', $productionDate) // 🔥 Tambahkan filter production date
+                ->where('Production_Date_Plan', $productionDate)
                 ->first();
 
             if (!$plan) {
@@ -253,25 +247,24 @@ class TestJointUniversalController extends Controller
                 $updateData['Status_Plan'] = 'done';
             }
 
-            DB::connection('testpodium')->table('plans')
+            DB::connection('podium')->table('plans')
                 ->where('Id_Plan', $plan->Id_Plan)
                 ->update($updateData);
 
-            // Simpan foto
+            // Simpan foto di folder joint_universal_photos
             if ($request->hasFile('Photo_Ng_Path')) {
-                $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
+                $photoPath = $request->file('Photo_Ng_Path')->store('joint_universal_photos', 'uploads');
             }
 
-            // 🔥 Simpan ke records PARCOM, termasuk production date
+            // Simpan ke records PARCOM
             DB::table('records')->insert([
                 'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
                 'Time_Record' => $now,
                 'No_Tractor_Record' => $request->No_Tractor_Record,
                 'Result_Record' => $request->Result_Record,
                 'Photo_Ng_Path' => $photoPath,
-                // 🔥 Tambahkan production date ke record PARCOM
+                'Text_Record' => $request->Text_Record,
+                'Predict_Record' => $request->Predict_Record,
                 'Production_Date_Record' => $productionDate,
             ]);
 
@@ -285,7 +278,7 @@ class TestJointUniversalController extends Controller
     public function index()
     {
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 1)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 4)->with('comparison', 'tractor', 'part', 'user')->get();
         return response()->json($records);
     }
 }
