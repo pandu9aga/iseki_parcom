@@ -53,7 +53,12 @@ class TestJointUniversalController extends Controller
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+
+        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+            $sequenceNoFormatted = $sequenceNo;
+        } else {
+            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        }
 
         try {
             $plan = DB::connection('testpodium')->table('plans')
@@ -176,7 +181,13 @@ class TestJointUniversalController extends Controller
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
-        $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+
+        $sequenceNo = $request->No_Tractor_Record;
+        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+            $sequenceNoFormatted = $sequenceNo;
+        } else {
+            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        }
         $productionDate = $request->input('Production_Date_Record');
 
         try {
