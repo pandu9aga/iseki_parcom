@@ -12,7 +12,7 @@ class JointUniversalController extends Controller
 {
     /**
      * Tentukan Text_Record berdasarkan Model_Name_Plan
-     * SXG3 -> SXG3
+     * SXG3 -> SXG 3
      * SCMA71 / SCMA60 -> SF PENDEK
      * SCMA54 / SCMB60 -> SF PANJANG
      */
@@ -21,7 +21,7 @@ class JointUniversalController extends Controller
         $modelNameUpper = strtoupper($modelName);
 
         if (strpos($modelNameUpper, 'SXG3') !== false) {
-            return 'SXG3';
+            return 'SXG 3';
         } elseif (strpos($modelNameUpper, 'SCMA71') !== false || strpos($modelNameUpper, 'SCMA60') !== false) {
             return 'SF PENDEK';
         } elseif (strpos($modelNameUpper, 'SCMA54') !== false || strpos($modelNameUpper, 'SCMB60') !== false) {
