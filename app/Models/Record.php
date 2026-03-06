@@ -10,6 +10,8 @@ class Record extends Model
     protected $primaryKey = 'Id_Record';
     public $timestamps = false;
 
+    protected $appends = ['tractor_name'];
+
     protected $fillable = [
         'Id_Comparison',
         'Id_Tractor',
@@ -49,15 +51,30 @@ class Record extends Model
     {
         // Ambil No_Produksi dari record ini
         $noProduksi = $this->No_Tractor_Record;
+        $productionDate = $this->Production_Date_Record;
 
-        // Konversi No_Produksi ke format 5 digit
-        $noProduksi5Digit = str_pad($noProduksi, 5, '0', STR_PAD_LEFT);
+        $query = Plan::query();
 
-        // Cari Plan yang sesuai
-        // Gunakan koneksi 'podium' yang telah ditentukan di model Plan
-        $plan = Plan::whereRaw('LPAD(?, 5, "0") = Sequence_No_Plan', [$noProduksi])
-                    ->first(); // Menggunakan $noProduksi, bukan $noProduksi5Digit, karena LPAD akan menanganinya
+        // Buat hanya lpad jika tidak mengandung 'T' saja
+        if (strpos(strtoupper($noProduksi), 'T') === false) {
+            $query->whereRaw('LPAD(?, 5, "0") = Sequence_No_Plan', [$noProduksi]);
+        } else {
+            $query->where('Sequence_No_Plan', $noProduksi);
+        }
 
-        return $plan; // Akan mengembalikan objek Plan atau null
+        // Match Production_Date_Record = Production_Date_Plan
+        if (!empty($productionDate)) {
+            $query->where('Production_Date_Plan', $productionDate);
+        } else {
+            // Fallback for old records: ambil yang terbaru berdasarkan sequence
+            $query->orderBy('Id_Plan', 'desc');
+        }
+
+        return $query->first(); // Akan mengembalikan objek Plan atau null
+    }
+
+    public function getTractorNameAttribute()
+    {
+        return $this->plan->Model_Name_Plan ?? '-';
     }
 }

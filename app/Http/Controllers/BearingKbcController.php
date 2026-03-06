@@ -301,7 +301,15 @@ class BearingKbcController extends Controller
     public function index()
     {
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 2)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)
+            ->where('Id_Comparison', 2)
+            ->with(['comparison', 'part', 'user'])
+            ->get();
+
+        foreach ($records as $record) {
+            $record->tractor = $record->plan;
+        }
+
         return response()->json($records);
     }
 }

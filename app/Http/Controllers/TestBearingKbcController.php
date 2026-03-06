@@ -206,7 +206,7 @@ class TestBearingKbcController extends Controller
             }
 
             $modelName = $plan->Model_Name_Plan;
-            $rule = DB::connection('testpodium')->table('rules')->where('Type_Rule', $modelName)->first();
+            $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
             if (!$rule) {
                 return response()->json(['success' => false, 'message' => "Rule tidak ditemukan di PODIUM"], 400);
             }
@@ -301,7 +301,15 @@ class TestBearingKbcController extends Controller
     public function index()
     {
         $date = Carbon::today();
-        $records = Record::whereDate('Time_Record', $date)->where('Id_Comparison', 2)->with('comparison', 'tractor', 'part', 'user')->get();
+        $records = Record::whereDate('Time_Record', $date)
+            ->where('Id_Comparison', 2)
+            ->with(['comparison', 'part', 'user'])
+            ->get();
+
+        foreach ($records as $record) {
+            $record->tractor = $record->plan;
+        }
+
         return response()->json($records);
     }
 }

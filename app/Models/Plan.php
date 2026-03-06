@@ -9,7 +9,7 @@ class Plan extends Model
 {
     use HasFactory;
 
-    protected $connection = 'testpodium';
+    protected $connection = 'podium';
     protected $table = 'plans'; // Nama tabel
     protected $primaryKey = 'Id_Plan'; // Nama primary key
 

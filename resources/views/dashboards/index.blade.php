@@ -108,7 +108,7 @@
                                         {{ $record->No_Tractor_Record }}
                                     </td>
                                     <td class="align-middle text-center">
-                                        {{ $record->tractor->Type_Tractor }}
+                                        {{ $record->tractor_name }}
                                     </td>
                                     <td class="align-middle text-center">
                                         {{ $record->comparison->Name_Comparison }}
@@ -124,8 +124,7 @@
                                         @elseif ($record->Result_Record === 'NG')
                                             <span class="badge bg-danger view-detail" data-bs-toggle="modal"
                                                 data-bs-target="#detailModal" data-id="{{ $record->Id_Record }}"
-                                                data-no="{{ $record->No_Tractor_Record }}"
-                                                data-type="{{ $record->tractor->Type_Tractor }}"
+                                                data-no="{{ $record->No_Tractor_Record }}" data-type="{{ $record->tractor_name }}"
                                                 data-comp="{{ $record->comparison->Name_Comparison }}"
                                                 data-part="{{ $record->part->Code_Part }}"
                                                 data-result="{{ $record->Result_Record }}"
@@ -137,8 +136,7 @@
                                         @elseif ($record->Result_Record === 'NG-OK')
                                             <span class="badge bg-warning view-detail" data-bs-toggle="modal"
                                                 data-bs-target="#detailModal" data-id="{{ $record->Id_Record }}"
-                                                data-no="{{ $record->No_Tractor_Record }}"
-                                                data-type="{{ $record->tractor->Type_Tractor }}"
+                                                data-no="{{ $record->No_Tractor_Record }}" data-type="{{ $record->tractor_name }}"
                                                 data-comp="{{ $record->comparison->Name_Comparison }}"
                                                 data-part="{{ $record->part->Code_Part }}"
                                                 data-result="{{ $record->Result_Record }}"

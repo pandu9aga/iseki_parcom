@@ -97,7 +97,7 @@ class DashboardController extends Controller
 
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, $record->No_Tractor_Record);
-            $sheet->setCellValue('C' . $row, $record->tractor->Type_Tractor);
+            $sheet->setCellValue('C' . $row, $record->tractor_name);
             $sheet->setCellValue('D' . $row, $record->comparison->Name_Comparison);
             $sheet->setCellValue('E' . $row, $record->part->Code_Part);
             $sheet->setCellValue('F' . $row, $record->Result_Record);
