@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Record;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
-use App\Models\Record;
 
 class JointUniversalController extends Controller
 {
@@ -44,15 +44,15 @@ class JointUniversalController extends Controller
         $productionDate = $request->input('production_date');
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $idComparison)->first();
-        if (!$comparison) {
+        if (! $comparison) {
             return response()->json([
                 'success' => false,
-                'message' => 'Comparison tidak ditemukan untuk Id_Comparison: ' . $idComparison
+                'message' => 'Comparison tidak ditemukan untuk Id_Comparison: '.$idComparison,
             ], 400);
         }
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
-        $processName = 'parcom_' . $processName;
+        $processName = 'parcom_'.$processName;
 
         if (strpos(strtoupper($sequenceNo), 'T') !== false) {
             $sequenceNoFormatted = $sequenceNo;
@@ -66,10 +66,10 @@ class JointUniversalController extends Controller
                 ->where('Production_Date_Plan', $productionDate)
                 ->first();
 
-            if (!$plan) {
+            if (! $plan) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' dan Production_Date_Plan '{$productionDate}' tidak ditemukan di sistem PODIUM."
+                    'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' dan Production_Date_Plan '{$productionDate}' tidak ditemukan di sistem PODIUM.",
                 ], 404);
             }
 
@@ -79,25 +79,25 @@ class JointUniversalController extends Controller
             $textRecord = $this->determineTextRecord($modelName);
 
             $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
-            if (!$rule) {
+            if (! $rule) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Rule untuk model '{$modelName}' tidak ditemukan di sistem PODIUM."
+                    'message' => "Rule untuk model '{$modelName}' tidak ditemukan di sistem PODIUM.",
                 ], 400);
             }
 
             $ruleSequence = json_decode($rule->Rule_Rule, true);
-            if (!is_array($ruleSequence)) {
+            if (! is_array($ruleSequence)) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Format rule untuk model '{$modelName}' rusak atau tidak valid."
+                    'message' => "Format rule untuk model '{$modelName}' rusak atau tidak valid.",
                 ], 400);
             }
 
             $position = null;
             foreach ($ruleSequence as $key => $process) {
                 if ($process === $processName) {
-                    $position = (int)$key;
+                    $position = (int) $key;
                     break;
                 }
             }
@@ -105,13 +105,13 @@ class JointUniversalController extends Controller
             if ($position === null) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Proses '{$processName}' tidak termasuk dalam rule untuk model '{$modelName}'."
+                    'message' => "Proses '{$processName}' tidak termasuk dalam rule untuk model '{$modelName}'.",
                 ], 400);
             }
 
             $recordRaw = $plan->Record_Plan;
             $record = [];
-            if (is_string($recordRaw) && !empty($recordRaw)) {
+            if (is_string($recordRaw) && ! empty($recordRaw)) {
                 $decodedRecord = json_decode($recordRaw, true);
                 if (is_array($decodedRecord)) {
                     $record = $decodedRecord;
@@ -122,22 +122,24 @@ class JointUniversalController extends Controller
             $missingPrevious = [];
             for ($i = 1; $i < $position; $i++) {
                 $prevProcess = $ruleSequence[$i] ?? null;
-                if ($prevProcess && !isset($record[$prevProcess])) {
+                if ($prevProcess && ! isset($record[$prevProcess])) {
                     $previousProcessesDone = false;
                     $missingPrevious[] = $prevProcess;
                 }
             }
 
-            if (!$previousProcessesDone) {
+            $previousProcessesDone = true;
+
+            if (! $previousProcessesDone) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+                    'message' => 'Proses sebelumnya belum selesai: '.implode(', ', $missingPrevious),
                 ], 400);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => "Semua proses sebelumnya sudah selesai. Siap melanjutkan.",
+                'message' => 'Semua proses sebelumnya sudah selesai. Siap melanjutkan.',
                 'model_name' => $modelName,
                 'text_record' => $textRecord,
             ]);
@@ -145,7 +147,7 @@ class JointUniversalController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memvalidasi rule di sistem PODIUM: ' . $e->getMessage()
+                'message' => 'Gagal memvalidasi rule di sistem PODIUM: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -167,7 +169,7 @@ class JointUniversalController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -175,12 +177,12 @@ class JointUniversalController extends Controller
         $photoPath = null;
 
         $comparison = DB::table('comparisons')->where('Id_Comparison', $request->Id_Comparison)->first();
-        if (!$comparison) {
+        if (! $comparison) {
             return response()->json(['success' => false, 'message' => 'Comparison tidak ditemukan'], 400);
         }
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
-        $processName = 'parcom_' . $processName;
+        $processName = 'parcom_'.$processName;
 
         $sequenceNo = $request->No_Tractor_Record;
         if (strpos(strtoupper($sequenceNo), 'T') !== false) {
@@ -196,31 +198,31 @@ class JointUniversalController extends Controller
                 ->where('Production_Date_Plan', $productionDate)
                 ->first();
 
-            if (!$plan) {
-                return response()->json(['success' => false, 'message' => "Plan tidak ditemukan di PODIUM untuk Sequence dan Production Date yang diberikan"], 404);
+            if (! $plan) {
+                return response()->json(['success' => false, 'message' => 'Plan tidak ditemukan di PODIUM untuk Sequence dan Production Date yang diberikan'], 404);
             }
 
             $modelName = $plan->Model_Name_Plan;
             $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
-            if (!$rule) {
-                return response()->json(['success' => false, 'message' => "Rule tidak ditemukan di PODIUM"], 400);
+            if (! $rule) {
+                return response()->json(['success' => false, 'message' => 'Rule tidak ditemukan di PODIUM'], 400);
             }
 
             $ruleSequence = json_decode($rule->Rule_Rule, true);
-            if (!is_array($ruleSequence)) {
-                return response()->json(['success' => false, 'message' => "Format rule rusak"], 400);
+            if (! is_array($ruleSequence)) {
+                return response()->json(['success' => false, 'message' => 'Format rule rusak'], 400);
             }
 
             $position = null;
             foreach ($ruleSequence as $key => $process) {
                 if ($process === $processName) {
-                    $position = (int)$key;
+                    $position = (int) $key;
                     break;
                 }
             }
 
             if ($position === null) {
-                return response()->json(['success' => false, 'message' => "Proses tidak ada dalam rule"], 400);
+                return response()->json(['success' => false, 'message' => 'Proses tidak ada dalam rule'], 400);
             }
 
             $record = [];
@@ -234,20 +236,22 @@ class JointUniversalController extends Controller
             $previousProcessesDone = true;
             for ($i = 1; $i < $position; $i++) {
                 $prevProcess = $ruleSequence[$i] ?? null;
-                if ($prevProcess && !isset($record[$prevProcess])) {
+                if ($prevProcess && ! isset($record[$prevProcess])) {
                     $previousProcessesDone = false;
                     break;
                 }
             }
 
-            if (!$previousProcessesDone) {
-                return response()->json(['success' => false, 'message' => "Proses sebelumnya belum selesai"], 400);
+            $previousProcessesDone = true;
+
+            if (! $previousProcessesDone) {
+                return response()->json(['success' => false, 'message' => 'Proses sebelumnya belum selesai'], 400);
             }
 
             $record[$processName] = $now->format('Y-m-d H:i:s');
             $allCompleted = true;
             foreach ($ruleSequence as $proc) {
-                if (!isset($record[$proc])) {
+                if (! isset($record[$proc])) {
                     $allCompleted = false;
                     break;
                 }
@@ -282,7 +286,7 @@ class JointUniversalController extends Controller
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
 
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: '.$e->getMessage()], 500);
         }
     }
 
