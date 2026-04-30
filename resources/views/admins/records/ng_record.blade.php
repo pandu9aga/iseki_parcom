@@ -28,49 +28,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($records as $record)
-                                <tr>
-                                    <td class="align-middle text-center">
-                                        <p class="text-xs font-weight-bold text-secondary">{{ $loop->iteration }}</p>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ $record->No_Tractor_Record ?? '-' }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ $record->tractor_name }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ optional($record->comparison)->Name_Comparison ?? '-' }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ optional($record->part)->Code_Part ?? '-' }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ $record->Text_Record ?? '-' }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ $record->Predict_Record ?? '-' }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <span class="badge bg-danger view-detail" data-bs-toggle="modal"
-                                            data-bs-target="#detailModal" data-id="{{ $record->Id_Record }}"
-                                            data-no="{{ $record->No_Tractor_Record }}" data-type="{{ $record->tractor_name }}"
-                                            data-comp="{{ optional($record->comparison)->Name_Comparison ?? '-' }}"
-                                            data-part="{{ optional($record->part)->Code_Part ?? '-' }}"
-                                            data-result="{{ $record->Result_Record }}"
-                                            data-time="{{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}"
-                                            data-photo="{{ $record->Photo_Ng_Path ? asset('uploads/' . $record->Photo_Ng_Path) : null }}"
-                                            data-photo-two="{{ $record->Photo_Ng_Path_Two ? asset('uploads/' . $record->Photo_Ng_Path_Two) : null }}"
-                                            data-text="{{ $record->Text_Record ?? null }}"
-                                            data-predict="{{ $record->Predict_Record ?? null }}" data-approve="true">
-                                            {{ $record->Result_Record }}
-                                        </span>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        {{ \Carbon\Carbon::parse($record->Time_Record)->format('d-m-Y H:i:s') }}
-                                    </td>
-                                </tr>
-                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -166,7 +123,22 @@
     <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
     <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
     <script>
-        new DataTable('#example');
+        $('#example').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('ng.record') }}",
+            columns: [
+                {data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'align-middle text-center text-xs font-weight-bold text-secondary'},
+                {data: 'No_Tractor_Record', name: 'No_Tractor_Record', className: 'align-middle text-center'},
+                {data: 'tractor_name', name: 'tractor_name', className: 'align-middle text-center'},
+                {data: 'comparison_name', name: 'comparison_name', className: 'align-middle text-center'},
+                {data: 'part_code', name: 'part_code', className: 'align-middle text-center'},
+                {data: 'Text_Record', name: 'Text_Record', className: 'align-middle text-center', defaultContent: '-'},
+                {data: 'Predict_Record', name: 'Predict_Record', className: 'align-middle text-center', defaultContent: '-'},
+                {data: 'action', name: 'action', orderable: false, searchable: false, className: 'align-middle text-center'},
+                {data: 'Time_Record', name: 'Time_Record', className: 'align-middle text-center'}
+            ]
+        });
 
         // Script untuk modal detail
         document.getElementById('detailModal').addEventListener('show.bs.modal', function (event) {

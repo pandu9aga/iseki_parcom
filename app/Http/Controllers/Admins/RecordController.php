@@ -12,15 +12,52 @@ use App\Models\Record;
 
 class RecordController extends Controller
 {
-    public function ngRecord()
+    public function ngRecord(Request $request)
     {
         $page = 'ng-record';
-        $records = Record::where('Result_Record', 'NG')
-            ->with('comparison', 'tractor', 'part', 'user')
-            ->orderBy('Time_Record', 'desc')
-            ->get();
+        
+        if ($request->ajax()) {
+            $records = Record::with('comparison', 'tractor', 'part', 'user')
+                ->where('Result_Record', 'NG')
+                ->select('records.*');
+                
+            return \Yajra\DataTables\Facades\DataTables::of($records)
+                ->addIndexColumn()
+                ->addColumn('tractor_name', function ($row) {
+                    return $row->tractor_name;
+                })
+                ->addColumn('comparison_name', function ($row) {
+                    return optional($row->comparison)->Name_Comparison ?? '-';
+                })
+                ->addColumn('part_code', function ($row) {
+                    return optional($row->part)->Code_Part ?? '-';
+                })
+                ->editColumn('Time_Record', function ($row) {
+                    return \Carbon\Carbon::parse($row->Time_Record)->format('d-m-Y H:i:s');
+                })
+                ->addColumn('action', function($row){
+                    $photo = $row->Photo_Ng_Path ? asset('uploads/' . $row->Photo_Ng_Path) : null;
+                    $photoTwo = $row->Photo_Ng_Path_Two ? asset('uploads/' . $row->Photo_Ng_Path_Two) : null;
+                    
+                    return '<span class="badge bg-danger view-detail" data-bs-toggle="modal"
+                        data-bs-target="#detailModal" data-id="'.$row->Id_Record.'"
+                        data-no="'.($row->No_Tractor_Record ?? '-').'" data-type="'.($row->tractor_name).'"
+                        data-comp="'.(optional($row->comparison)->Name_Comparison ?? '-').'"
+                        data-part="'.(optional($row->part)->Code_Part ?? '-').'"
+                        data-result="'.$row->Result_Record.'"
+                        data-time="'.\Carbon\Carbon::parse($row->Time_Record)->format('d-m-Y H:i:s').'"
+                        data-photo="'.$photo.'"
+                        data-photo-two="'.$photoTwo.'"
+                        data-text="'.($row->Text_Record ?? null).'"
+                        data-predict="'.($row->Predict_Record ?? null).'" data-approve="true">
+                        '.$row->Result_Record.'
+                    </span>';
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
 
-        return view('admins.records.ng_record', compact('page', 'records'));
+        return view('admins.records.ng_record', compact('page'));
     }
 
     public function record($Id_Comparison)
