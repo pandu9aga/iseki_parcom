@@ -8,8 +8,21 @@ use Carbon\Carbon;
 use App\Models\Comparison;
 use App\Models\ListComparison;
 
+use App\Models\Record;
+
 class RecordController extends Controller
 {
+    public function ngRecord()
+    {
+        $page = 'ng-record';
+        $records = Record::where('Result_Record', 'NG')
+            ->with('comparison', 'tractor', 'part', 'user')
+            ->orderBy('Time_Record', 'desc')
+            ->get();
+
+        return view('admins.records.ng_record', compact('page', 'records'));
+    }
+
     public function record($Id_Comparison)
     {
         $page = 'record';
