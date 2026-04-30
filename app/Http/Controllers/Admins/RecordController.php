@@ -1,26 +1,27 @@
 <?php
+
 namespace App\Http\Controllers\Admins;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use App\Models\Comparison;
 use App\Models\ListComparison;
-
 use App\Models\Record;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RecordController extends Controller
 {
     public function ngRecord(Request $request)
     {
         $page = 'ng-record';
-        
+
         if ($request->ajax()) {
             $records = Record::with('comparison', 'tractor', 'part', 'user')
                 ->where('Result_Record', 'NG')
-                ->select('records.*');
-                
+                ->select('records.*')
+                ->orderBy('Time_Record', 'desc');
+
             return \Yajra\DataTables\Facades\DataTables::of($records)
                 ->addIndexColumn()
                 ->addColumn('tractor_name', function ($row) {
@@ -35,10 +36,10 @@ class RecordController extends Controller
                 ->editColumn('Time_Record', function ($row) {
                     return \Carbon\Carbon::parse($row->Time_Record)->format('d-m-Y H:i:s');
                 })
-                ->addColumn('action', function($row){
-                    $photo = $row->Photo_Ng_Path ? asset('uploads/' . $row->Photo_Ng_Path) : null;
-                    $photoTwo = $row->Photo_Ng_Path_Two ? asset('uploads/' . $row->Photo_Ng_Path_Two) : null;
-                    
+                ->addColumn('action', function ($row) {
+                    $photo = $row->Photo_Ng_Path ? asset('uploads/'.$row->Photo_Ng_Path) : null;
+                    $photoTwo = $row->Photo_Ng_Path_Two ? asset('uploads/'.$row->Photo_Ng_Path_Two) : null;
+
                     return '<span class="badge bg-danger view-detail" data-bs-toggle="modal"
                         data-bs-target="#detailModal" data-id="'.$row->Id_Record.'"
                         data-no="'.($row->No_Tractor_Record ?? '-').'" data-type="'.($row->tractor_name).'"
@@ -75,7 +76,6 @@ class RecordController extends Controller
         return view('admins.records.index', compact('page', 'comparison', 'list_comparisons'));
     }
 
-
     public function insert(Request $request)
     {
         $request->validate([
@@ -91,7 +91,7 @@ class RecordController extends Controller
         $photoPath = null;
 
         // Kalau hasil NG -> foto wajib diupload
-        if ($request->Result_Record === "NG") {
+        if ($request->Result_Record === 'NG') {
             if ($request->hasFile('Photo_Ng_Path')) {
                 $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
             } else {
@@ -100,16 +100,15 @@ class RecordController extends Controller
         }
 
         DB::table('records')->insert([
-            'Id_Comparison'     => $request->Id_Comparison,
-            'Id_Tractor'        => $request->Id_Tractor,
-            'Id_Part'           => $request->Id_Part,
-            'Time_Record'       => $now,
+            'Id_Comparison' => $request->Id_Comparison,
+            'Id_Tractor' => $request->Id_Tractor,
+            'Id_Part' => $request->Id_Part,
+            'Time_Record' => $now,
             'No_Tractor_Record' => $request->No_Tractor_Record,
-            'Result_Record'     => $request->Result_Record,
-            'Photo_Ng_Path'     => $photoPath, // hanya terisi kalau NG
+            'Result_Record' => $request->Result_Record,
+            'Photo_Ng_Path' => $photoPath, // hanya terisi kalau NG
         ]);
 
         return redirect()->route('dashboard.admin')->with('success', 'Record berhasil disimpan');
     }
 }
-
