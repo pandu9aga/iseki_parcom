@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Record;
@@ -257,23 +258,39 @@ class TestRingSynchronizerController extends Controller
                 ->where('Id_Plan', $plan->Id_Plan)
                 ->update($updateData);
 
-            // Simpan foto
+            // Cek apakah record sudah ada (updateOrCreate)
+            $existingRecord = Record::where('No_Tractor_Record', $request->No_Tractor_Record)
+                ->where('Production_Date_Record', $productionDate)
+                ->where('Id_Comparison', $request->Id_Comparison)
+                ->first();
+
+            // Hapus foto lama jika ada record sebelumnya
+            if ($existingRecord) {
+                if ($existingRecord->Photo_Ng_Path && Storage::disk('uploads')->exists($existingRecord->Photo_Ng_Path)) {
+                    Storage::disk('uploads')->delete($existingRecord->Photo_Ng_Path);
+                }
+            }
+
+            // Simpan foto baru
             if ($request->hasFile('Photo_Ng_Path')) {
                 $photoPath = $request->file('Photo_Ng_Path')->store('ng_photos', 'uploads');
             }
 
-            // 🔥 Simpan ke records PARCOM, termasuk production date
-            DB::table('records')->insert([
-                'Id_Comparison' => $request->Id_Comparison,
-                'Id_Tractor' => $request->Id_Tractor,
-                'Id_Part' => $request->Id_Part,
-                'Time_Record' => $now,
-                'No_Tractor_Record' => $request->No_Tractor_Record,
-                'Result_Record' => $request->Result_Record,
-                'Photo_Ng_Path' => $photoPath,
-                // 🔥 Tambahkan production date ke record PARCOM
-                'Production_Date_Record' => $productionDate,
-            ]);
+            // Update atau Create record PARCOM
+            Record::updateOrCreate(
+                [
+                    'No_Tractor_Record' => $request->No_Tractor_Record,
+                    'Production_Date_Record' => $productionDate,
+                    'Id_Comparison' => $request->Id_Comparison,
+                ],
+                [
+                    'Id_Tractor' => $request->Id_Tractor,
+                    'Id_Part' => $request->Id_Part,
+                    'Time_Record' => $now,
+                    'Result_Record' => $request->Result_Record,
+                    'Photo_Ng_Path' => $photoPath,
+                ]
+            );
 
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Record;
@@ -267,7 +268,23 @@ class BearingKbcController extends Controller
                 ->where('Id_Plan', $plan->Id_Plan)
                 ->update($updateData);
 
-            // Simpan foto
+            // Cek apakah record sudah ada (updateOrCreate)
+            $existingRecord = Record::where('No_Tractor_Record', $request->No_Tractor_Record)
+                ->where('Production_Date_Record', $productionDate)
+                ->where('Id_Comparison', $request->Id_Comparison)
+                ->first();
+
+            // Hapus foto lama jika ada record sebelumnya
+            if ($existingRecord) {
+                if ($existingRecord->Photo_Ng_Path && Storage::disk('uploads')->exists($existingRecord->Photo_Ng_Path)) {
+                    Storage::disk('uploads')->delete($existingRecord->Photo_Ng_Path);
+                }
+                if ($existingRecord->Photo_Ng_Path_Two && Storage::disk('uploads')->exists($existingRecord->Photo_Ng_Path_Two)) {
+                    Storage::disk('uploads')->delete($existingRecord->Photo_Ng_Path_Two);
+                }
+            }
+
+            // Simpan foto baru
             if ($request->hasFile('Photo_Ng_Path')) {
                 $photoPath1 = $request->file('Photo_Ng_Path')->store('bearing_kbc_photos', 'uploads');
             }
@@ -275,21 +292,22 @@ class BearingKbcController extends Controller
                 $photoPath2 = $request->file('Photo_Ng_Path_Two')->store('bearing_kbc_photos', 'uploads');
             }
 
-            // 🔥 Simpan ke records PARCOM, termasuk production date
-            DB::table('records')->insert([
-                'Id_Comparison' => $request->Id_Comparison,
-                // 'Id_Tractor' => $request->Id_Tractor,
-                // 'Id_Part' => $request->Id_Part,
-                'Time_Record' => $now,
-                'No_Tractor_Record' => $request->No_Tractor_Record,
-                'Result_Record' => $request->Result_Record,
-                'Photo_Ng_Path' => $photoPath1,
-                'Photo_Ng_Path_Two' => $photoPath2,
-                'Text_Record' => $request->Text_Record,
-                'Predict_Record' => $request->Predict_Record,
-                // 🔥 Tambahkan production date ke record PARCOM
-                'Production_Date_Record' => $productionDate,
-            ]);
+            // Update atau Create record PARCOM
+            Record::updateOrCreate(
+                [
+                    'No_Tractor_Record' => $request->No_Tractor_Record,
+                    'Production_Date_Record' => $productionDate,
+                    'Id_Comparison' => $request->Id_Comparison,
+                ],
+                [
+                    'Time_Record' => $now,
+                    'Result_Record' => $request->Result_Record,
+                    'Photo_Ng_Path' => $photoPath1,
+                    'Photo_Ng_Path_Two' => $photoPath2,
+                    'Text_Record' => $request->Text_Record,
+                    'Predict_Record' => $request->Predict_Record,
+                ]
+            );
 
             return response()->json(['success' => true, 'message' => 'Record berhasil disimpan']);
 
