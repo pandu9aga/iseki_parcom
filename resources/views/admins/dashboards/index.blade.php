@@ -35,14 +35,22 @@
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         Choose Day & Comparison
                                     </div>
-                                    <form class="user" action="{{ route('dashboard.admin.submit') }}" method="GET">
+                                    <form class="user" action="{{ route('dashboard.admin.submit') }}" method="GET" id="filterForm">
                                         @csrf
-                                        <div class="row d-flex align-items-center">
-                                            <div class="col-lg-4 col-md-4 mb-1">
-                                                <input name="Day_Record" type="date" class="form-control form-control-user"
-                                                    value="{{ $dateFormatted }}" required>
+                                        <div class="row d-flex align-items-end">
+                                            <div class="col-12 mb-1">
+                                                <div class="input-group">
+                                                    <button type="button" class="btn btn-outline-primary" id="prevDateBtn">
+                                                        <i class="fas fa-chevron-left"></i>
+                                                    </button>
+                                                    <input name="Day_Record" type="date" class="form-control form-control-user"
+                                                        value="{{ $dateFormatted }}" required id="dateInput">
+                                                    <button type="button" class="btn btn-outline-primary" id="nextDateBtn">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div class="col-lg-4 col-md-4 mb-1">
+                                            <div class="col-lg-8 col-md-7 mb-1">
                                                 <select name="Id_Comparison" class="form-control">
                                                     @foreach($availableComparisons as $comp)
                                                         <option value="{{ $comp->Id_Comparison }}" {{ $comp->Id_Comparison == $selectedComparisonId ? 'selected' : '' }}>
@@ -51,8 +59,8 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-lg-4 col-md-4">
-                                                <button class="d-sm-inline btn btn-md btn-primary text-white" type="submit">
+                                            <div class="col-lg-4 col-md-5">
+                                                <button class="d-sm-inline btn btn-md btn-primary text-white w-100" type="submit">
                                                     Apply
                                                 </button>
                                             </div>
@@ -302,6 +310,26 @@
     <script src="{{asset('assets/datatables/datatables.min.js')}}"></script>
     <script>
         new DataTable('#example');
+
+        function adjustDate(days) {
+            const dateInput = document.getElementById('dateInput');
+            const parts = dateInput.value.split('-');
+            let date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            date.setDate(date.getDate() + days);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            dateInput.value = y + '-' + m + '-' + d;
+            document.getElementById('filterForm').submit();
+        }
+
+        document.getElementById('prevDateBtn').addEventListener('click', function() {
+            adjustDate(-1);
+        });
+
+        document.getElementById('nextDateBtn').addEventListener('click', function() {
+            adjustDate(1);
+        });
 
         // Script untuk modal detail
         document.getElementById('detailModal').addEventListener('show.bs.modal', function (event) {
