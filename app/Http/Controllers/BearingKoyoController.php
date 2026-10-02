@@ -103,9 +103,24 @@ class BearingKoyoController extends Controller
             }
 
             if (!$previousProcessesDone) {
+                $missingStr = implode(', ', $missingPrevious);
+
+                try {
+                    DB::connection('podium')->table('ng_processes')->insert([
+                        'app_name' => 'iseki_parcom',
+                        'sequence_no' => $sequenceNoFormatted,
+                        'current_process' => $processName,
+                        'missing_process' => $missingStr,
+                        'message' => "Proses sebelumnya belum selesai: " . $missingStr,
+                        'created_at' => Carbon::now(),
+                    ]);
+                } catch (\Exception $logEx) {
+                    \Illuminate\Support\Facades\Log::error('Gagal mencatat ng_processes di iseki_parcom BearingKoyoController: ' . $logEx->getMessage());
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+                    'message' => "Proses sebelumnya belum selesai: " . $missingStr
                 ], 400);
             }
 

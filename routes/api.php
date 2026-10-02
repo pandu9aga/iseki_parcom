@@ -48,3 +48,7 @@ Route::get('/testing/bearing-koyo/index', [TestBearingKoyoController::class, 'in
 Route::post('/testing/joint-universal/validate', [TestJointUniversalController::class, 'validateRule']);
 Route::post('/testing/joint-universal/save', [TestJointUniversalController::class, 'insert']);
 Route::get('/testing/joint-universal/index', [TestJointUniversalController::class, 'index']);
+
+use App\Http\Controllers\Api\ShaftGcController;
+Route::post('/shaft-gc/plan', [ShaftGcController::class, 'getPlan']);
+Route::post('/shaft-gc/save', [ShaftGcController::class, 'saveResult']);

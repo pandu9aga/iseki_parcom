@@ -266,7 +266,22 @@ class MainController extends Controller
             }
 
             if (!$previousProcessesDone) {
-                return back()->withErrors(['general' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)]);
+                $missingStr = implode(', ', $missingPrevious);
+
+                try {
+                    DB::connection('podium')->table('ng_processes')->insert([
+                        'app_name' => 'iseki_parcom',
+                        'sequence_no' => $sequenceNoFormatted,
+                        'current_process' => $processName,
+                        'missing_process' => $missingStr,
+                        'message' => "Proses sebelumnya belum selesai: " . $missingStr,
+                        'created_at' => Carbon::now(),
+                    ]);
+                } catch (\Exception $logEx) {
+                    \Illuminate\Support\Facades\Log::error('Gagal mencatat ng_processes di iseki_parcom insert: ' . $logEx->getMessage());
+                }
+
+                return back()->withErrors(['general' => "Proses sebelumnya belum selesai: " . $missingStr]);
             }
 
             // 7. Update record: tambahkan proses dan timestamp
@@ -445,9 +460,24 @@ class MainController extends Controller
             }
 
             if (!$previousProcessesDone) {
+                $missingStr = implode(', ', $missingPrevious);
+
+                try {
+                    DB::connection('podium')->table('ng_processes')->insert([
+                        'app_name' => 'iseki_parcom',
+                        'sequence_no' => $sequenceNoFormatted,
+                        'current_process' => $processName,
+                        'missing_process' => $missingStr,
+                        'message' => "Proses sebelumnya belum selesai: " . $missingStr,
+                        'created_at' => Carbon::now(),
+                    ]);
+                } catch (\Exception $logEx) {
+                    \Illuminate\Support\Facades\Log::error('Gagal mencatat ng_processes di iseki_parcom validateRule: ' . $logEx->getMessage());
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+                    'message' => "Proses sebelumnya belum selesai: " . $missingStr
                 ], 400);
             }
 
