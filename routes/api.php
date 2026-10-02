@@ -10,6 +10,11 @@ use App\Http\Controllers\TestRingSynchronizerController;
 use App\Http\Controllers\TestBearingKbcController;
 use App\Http\Controllers\TestBearingKoyoController;
 use App\Http\Controllers\TestJointUniversalController;
+use App\Http\Controllers\ShaftGcController;
+
+Route::post('/shaft-gc/plan', [ShaftGcController::class, 'plan']);
+Route::post('/shaft-gc/save', [ShaftGcController::class, 'save']);
+Route::get('/shaft-gc/index', [ShaftGcController::class, 'index']);
 
 Route::post('/ring-synchronizer/validate', [RingSynchronizerController::class, 'validateRule']);
 Route::get('/ring-synchronizer/part-by-tractor/{tractorType}', [RingSynchronizerController::class, 'getPartByTractorType']);

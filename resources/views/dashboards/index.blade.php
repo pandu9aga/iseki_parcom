@@ -23,6 +23,8 @@
                                     KOYO</a></li>
                             <li><a class="dropdown-item" href="{{ route('record', ['Id_Comparison' => 4]) }}">Joint
                                     Universal</a></li>
+                            <li><a class="dropdown-item" href="{{ route('record', ['Id_Comparison' => 5]) }}">Shaft
+                                    GC</a></li>
                         </ul>
                     </div>
                 </div>
