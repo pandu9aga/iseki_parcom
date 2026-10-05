@@ -17,50 +17,123 @@ class ShaftGcController extends Controller
         ]);
 
         $qrCode = $request->input('qr_code');
+        \Illuminate\Support\Facades\Log::info("Shaft GC Plan API hit with QR: " . $qrCode);
         
-        // Parse QR Code (Assuming format: 0754120261030...)
-        if (strlen($qrCode) < 13) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Format QR Code tidak valid.'
-            ]);
+        $tractorType = '';
+        
+        // Coba pisahkan dengan titik koma jika ada
+        if (strpos($qrCode, ';') !== false) {
+            $parts = explode(';', $qrCode);
+            if (count($parts) >= 2) {
+                $sequenceNo = trim($parts[0]);
+                $productionDate = trim($parts[1]);
+                if (count($parts) >= 3) {
+                    $tractorType = trim($parts[2]);
+                }
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Format QR Code salah (kurang dari 2 bagian dengan pemisah ;).'
+                ]);
+            }
+        } else {
+            // Asumsi format lama tanpa pemisah: 0754120261030...
+            if (strlen($qrCode) < 13) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Format QR Code tidak valid (kurang dari 13 karakter).'
+                ]);
+            }
+            $sequenceNo = substr($qrCode, 0, 5);
+            $productionDate = substr($qrCode, 5, 8);
         }
-
-        $sequenceNo = substr($qrCode, 0, 5);
-        $productionDate = substr($qrCode, 5, 8);
 
         // Conditional requirement as per user request:
         // parcom_shaft_gc is only required for Production_Date_Plan >= 20261030 and Sequence_No_Plan >= 07541
         // But the controller just needs to check if it's in the rule for that plan.
         
+        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+            $sequenceNoFormatted = $sequenceNo;
+        } else {
+            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        }
+
         $plan = DB::connection('podium')->table('plans')
-            ->where('Sequence_No_Plan', $sequenceNo)
+            ->where('Sequence_No_Plan', $sequenceNoFormatted)
             ->where('Production_Date_Plan', $productionDate)
             ->first();
 
         if (!$plan) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Plan tidak ditemukan untuk Sequence {$sequenceNo} dan Date {$productionDate}."
+                'message' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' dan Date '{$productionDate}' tidak ditemukan di sistem PODIUM."
             ]);
         }
 
         $modelName = $plan->Model_Name_Plan;
+        $planType = $plan->Type_Plan;
         
-        // Check rule
-        $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
+        $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $planType)->first();
+        if (!$rule) {
+            $rule = DB::connection('podium')->table('rules')->where('Type_Rule', $modelName)->first();
+        }
+
         if (!$rule) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Rule untuk model '{$modelName}' tidak ditemukan."
+                'message' => "Rule untuk tipe '{$planType}' atau model '{$modelName}' tidak ditemukan di sistem PODIUM."
             ]);
         }
 
-        $ruleSequence = json_decode($rule->Rule_Rule, true);
+        $ruleSequence = json_decode($rule->Rule_Rule, true) ?? [];
         $processName = 'parcom_shaft_gc';
-        
-        // Filter out based on requirement (already handled in podium's dashboard, but let's be strict here too)
         $isRequired = in_array($processName, $ruleSequence);
+        
+        if (!$isRequired) {
+            return response()->json([
+                'status' => 'success',
+                'required' => false,
+                'message' => 'Proses parcom_shaft_gc tidak dibutuhkan untuk traktor ini.'
+            ]);
+        }
+
+        $position = null;
+        foreach ($ruleSequence as $key => $process) {
+            if ($process === $processName) {
+                $position = (int) $key;
+                break;
+            }
+        }
+
+        if ($position !== null && $position > 1) {
+            $recordRaw = $plan->Record_Plan;
+            $record = [];
+            if (is_string($recordRaw) && !empty($recordRaw)) {
+                $decodedRecord = json_decode($recordRaw, true);
+                if (is_array($decodedRecord)) {
+                    $record = $decodedRecord;
+                }
+            }
+
+            $missingPrevious = [];
+            for ($i = 1; $i < $position; $i++) {
+                $prevProcess = $ruleSequence[$i] ?? null;
+                // Use string key cast just in case
+                if ($prevProcess === null && isset($ruleSequence[(string)$i])) {
+                    $prevProcess = $ruleSequence[(string)$i];
+                }
+                if ($prevProcess && !isset($record[$prevProcess])) {
+                    $missingPrevious[] = $prevProcess;
+                }
+            }
+
+            if (!empty($missingPrevious)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Proses sebelumnya belum selesai: ' . implode(', ', $missingPrevious),
+                ]);
+            }
+        }
         
         if ((int)$productionDate < 20261030) {
             $isRequired = false;
@@ -72,18 +145,19 @@ class ShaftGcController extends Controller
             return response()->json([
                 'status' => 'success',
                 'required' => false,
-                'message' => 'Proses parcom_shaft_gc tidak dibutuhkan untuk traktor ini.'
+                'message' => 'Proses parcom_shaft_gc tidak dibutuhkan untuk traktor ini (syarat tanggal).'
             ]);
         }
 
         // Determine expected text
-        $modelNameLower = strtolower($modelName);
+        $modelNameLower = strtolower(isset($modelName) ? $modelName : $planType);
         $expectedText = '';
         if (strpos($modelNameLower, 'gc') !== false && strpos($modelNameLower, '23') !== false) {
             $expectedText = 'gc_23';
         } elseif (strpos($modelNameLower, 'gc') !== false && strpos($modelNameLower, '25') !== false) {
             $expectedText = 'gc_25';
         }
+
 
         if (empty($expectedText)) {
             return response()->json([
@@ -111,73 +185,90 @@ class ShaftGcController extends Controller
         ]);
 
         $qrCode = $request->input('qr_code');
-        $sequenceNo = substr($qrCode, 0, 5);
-        $productionDate = substr($qrCode, 5, 8);
+        // Coba pisahkan dengan titik koma jika ada
+        if (strpos($qrCode, ';') !== false) {
+            $parts = explode(';', $qrCode);
+            if (count($parts) >= 2) {
+                $sequenceNo = trim($parts[0]);
+                $productionDate = trim($parts[1]);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Format QR Code salah (kurang dari 2 bagian dengan pemisah ;).'
+                ]);
+            }
+        } else {
+            // Asumsi format lama tanpa pemisah: 0754120261030...
+            if (strlen($qrCode) < 13) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Format QR Code tidak valid.'
+                ]);
+            }
+            $sequenceNo = substr($qrCode, 0, 5);
+            $productionDate = substr($qrCode, 5, 8);
+        }
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
 
+        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+            $sequenceNoFormatted = $sequenceNo;
+        } else {
+            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        }
+
         $plan = DB::connection('podium')->table('plans')
-            ->where('Sequence_No_Plan', $sequenceNo)
+            ->where('Sequence_No_Plan', $sequenceNoFormatted)
             ->where('Production_Date_Plan', $productionDate)
             ->first();
-
-        if (!$plan) {
-            return response()->json(['status' => 'error', 'message' => 'Plan tidak ditemukan.']);
-        }
 
         // Upload Photo
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $photoPath = $file->storeAs('ng_photos', $filename, 'public');
+            $file->move(public_path('uploads/shaft_gc_photos'), $filename);
+            $photoPath = 'shaft_gc_photos/' . $filename;
         }
 
         // Simpan ke database iseki_parcom records
         $record = new Record();
         $record->Id_Comparison = 5; // Shaft GC
-        $record->Id_Tractor = 1; // Default atau ambil dari relasi (bisa disesuaikan, aplikasi lama menggunakan id list_comparisons)
-        $record->Id_Part = 1; // Default
-        $record->No_Tractor_Record = $sequenceNo;
+        $record->Id_Tractor = null; 
+        $record->Id_Part = null; 
+        $record->No_Tractor_Record = $sequenceNoFormatted;
+        $record->Production_Date_Record = $productionDate;
         $record->Result_Record = $request->input('result_status');
         $record->Time_Record = $timestamp;
-        $record->Id_User = 1; // Default sistem
+        $record->Id_User = null; 
         $record->Text_Record = $request->input('expected_text');
         $record->Predict_Record = $request->input('prediction_text');
         
         if ($photoPath) {
             $record->Photo_Ng_Path = $photoPath;
         }
-        
-        // Coba cari traktor berdasarkan nama model (kalau perlu untuk dashboard)
-        $tractor = DB::table('tractors')->where('Type_Tractor', $plan->Model_Name_Plan)->first();
-        if ($tractor) {
-            $record->Id_Tractor = $tractor->Id_Tractor;
-        }
 
         $record->save();
 
         // Update Podium Plans
-        $recordRaw = $plan->Record_Plan;
-        $recordArr = [];
-        if (is_string($recordRaw) && !empty($recordRaw)) {
-            $decodedRecord = json_decode($recordRaw, true);
-            if (is_array($decodedRecord)) {
-                $recordArr = $decodedRecord;
+        if ($plan) {
+            $recordRaw = $plan->Record_Plan;
+            $recordArr = [];
+            if (is_string($recordRaw) && !empty($recordRaw)) {
+                $decodedRecord = json_decode($recordRaw, true);
+                if (is_array($decodedRecord)) {
+                    $recordArr = $decodedRecord;
+                }
             }
-        }
-        
-        $processName = 'parcom_shaft_gc';
-        $recordArr[$processName] = [
-            'status' => $request->input('result_status'),
-            'timestamp' => $timestamp
-        ];
+            
+            $processName = 'parcom_shaft_gc';
+            $recordArr[$processName] = $timestamp;
 
-        DB::connection('podium')->table('plans')
-            ->where('Id_Plan', $plan->Id_Plan)
-            ->update([
-                'Record_Plan' => json_encode($recordArr),
-                'Updated_At_Plan' => Carbon::now()
-            ]);
+            DB::connection('podium')->table('plans')
+                ->where('Id_Plan', $plan->Id_Plan)
+                ->update([
+                    'Record_Plan' => json_encode($recordArr)
+                ]);
+        }
 
         return response()->json([
             'status' => 'success',

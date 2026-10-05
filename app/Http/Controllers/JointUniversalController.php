@@ -132,6 +132,7 @@ class JointUniversalController extends Controller
                 }
             }
 
+            // Pengecualian khusus untuk joint: selalu true
             $previousProcessesDone = true;
 
             if (! $previousProcessesDone) {
@@ -246,6 +247,7 @@ class JointUniversalController extends Controller
                 }
             }
 
+            // Pengecualian khusus untuk joint: selalu true
             $previousProcessesDone = true;
 
             if (! $previousProcessesDone) {
