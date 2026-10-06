@@ -207,7 +207,7 @@ class MainController extends Controller
         // --- PERUBAHAN: Format sequence_no ---
         // Format No_Tractor_Record ke 5 digit dengan leading zero
         // Misal: "6731" -> "06731", "1" -> "00001", "12345" -> "12345"
-        $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($request->No_Tractor_Record), 'T') !== false || strpos(strtoupper($request->No_Tractor_Record), 'MP') !== false) ? $request->No_Tractor_Record : str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
         $timestamp = $now->format('Y-m-d H:i:s');
 
         try {
@@ -373,7 +373,7 @@ class MainController extends Controller
 
         // --- LOGIKA VALIDASI URUTAN DARI DATABASE PODIUM ---
         // --- PERUBAHAN: Format sequence_no ---
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         try {
             // 1. Cari plan di database PODIUM berdasarkan Sequence_No_Plan

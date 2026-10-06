@@ -61,7 +61,7 @@ class JointUniversalController extends Controller
         if (strpos(strtoupper($sequenceNo), 'T') !== false) {
             $sequenceNoFormatted = $sequenceNo;
         } else {
-            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+            $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
         }
 
         try {
@@ -193,7 +193,7 @@ class JointUniversalController extends Controller
         if (strpos(strtoupper($sequenceNo), 'T') !== false) {
             $sequenceNoFormatted = $sequenceNo;
         } else {
-            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+            $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
         }
         $productionDate = $request->input('Production_Date_Record');
 

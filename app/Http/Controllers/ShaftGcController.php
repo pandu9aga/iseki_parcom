@@ -52,10 +52,10 @@ class ShaftGcController extends Controller
         // parcom_shaft_gc is only required for Production_Date_Plan >= 20261030 and Sequence_No_Plan >= 07541
         // But the controller just needs to check if it's in the rule for that plan.
         
-        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+        if (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) {
             $sequenceNoFormatted = $sequenceNo;
         } else {
-            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+            $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
         }
 
         $plan = DB::connection('podium')->table('plans')
@@ -210,10 +210,10 @@ class ShaftGcController extends Controller
         }
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
 
-        if (strpos(strtoupper($sequenceNo), 'T') !== false) {
+        if (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) {
             $sequenceNoFormatted = $sequenceNo;
         } else {
-            $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+            $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
         }
 
         $plan = DB::connection('podium')->table('plans')

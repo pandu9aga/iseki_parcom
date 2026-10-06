@@ -35,7 +35,7 @@ class TestBearingKbcController extends Controller
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         try {
             // 🔥 Tambahkan kondisi untuk production date di query plan
@@ -96,6 +96,17 @@ class TestBearingKbcController extends Controller
             $missingPrevious = [];
             for ($i = 1; $i < $position; $i++) {
                 $prevProcess = $ruleSequence[$i] ?? null;
+                
+                // --- PENGECUALIAN UNTUK SHAFT GC ---
+                if ($prevProcess === 'parcom_shaft_gc') {
+                    if ((int)$productionDate < 20261030) {
+                        continue;
+                    } elseif ((int)$productionDate == 20261030 && (int)$sequenceNoFormatted < 7541) {
+                        continue;
+                    }
+                }
+                // -----------------------------------
+
                 if ($prevProcess && !isset($record[$prevProcess])) {
                     $previousProcessesDone = false;
                     $missingPrevious[] = $prevProcess;
@@ -191,7 +202,7 @@ class TestBearingKbcController extends Controller
 
         $processName = strtolower(str_replace(' ', '_', $comparison->Name_Comparison));
         $processName = 'parcom_' . $processName;
-        $sequenceNoFormatted = str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($request->No_Tractor_Record), 'T') !== false || strpos(strtoupper($request->No_Tractor_Record), 'MP') !== false) ? $request->No_Tractor_Record : str_pad($request->No_Tractor_Record, 5, '0', STR_PAD_LEFT);
         // 🔥 Ambil production date dari request
         $productionDate = $request->input('Production_Date_Record');
 
