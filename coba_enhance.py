@@ -35,15 +35,15 @@ for img_path in image_paths:
     # Semakin besar angkanya, gambar semakin blur sebelum dideteksi tepi (membantu agar noise debu/goresan hilang).
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     
-    # 4. CANNY EDGE DETECTION (Pendeteksi Tepi)
-    # Dua angka di sini (20 dan 80) adalah Treshold bawah dan atas.
-    # Jika tepi kurang banyak/masih samar, KECILKAN angkanya (misal 10, 50).
-    # Jika terlalu banyak garis "sampah" yang tidak perlu, BESARKAN angkanya (misal 50, 150 atau 100, 200).
-    edges = cv2.Canny(blurred, 50, 150)
+    # 4. ADAPTIVE GAUSSIAN THRESHOLDING
+    # Menggantikan Canny Edge Detection. 
+    # cv2.ADAPTIVE_THRESH_GAUSSIAN_C digunakan untuk membedakan garis (lekukan dalam) dengan tekstur rata di sekitarnya
+    # Angka 11 adalah blockSize (area blok sekitar, harus ganjil), 2 adalah nilai konstanta C yang dikurangi dari rata-rata.
+    edges = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     
     # 5. DILATION (Ketebalan Garis Hitam)
-    # (3,3) adalah ukuran penebal. Bisa diubah jadi (5,5) untuk garis yang SANGAT tebal.
-    # iterations=1 adalah berapa kali penebalan diulang. Coba ubah jadi iterations=2 untuk lebih tebal.
+    # (1,1) adalah ukuran penebal. Bisa diubah jadi (3,3) atau (5,5) untuk garis yang lebih tebal.
+    # iterations=1 adalah berapa kali penebalan diulang.
     kernel = np.ones((1,1), np.uint8)
     thick_edges = cv2.dilate(edges, kernel, iterations=1)
     
