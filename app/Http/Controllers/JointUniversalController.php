@@ -319,6 +319,7 @@ class JointUniversalController extends Controller
         $records = Record::whereDate('Time_Record', $date)
             ->where('Id_Comparison', 4)
             ->with(['comparison', 'part', 'user'])
+            ->orderBy('Time_Record', 'desc')
             ->get();
 
         foreach ($records as $record) {
